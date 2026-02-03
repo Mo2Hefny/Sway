@@ -1,6 +1,7 @@
 //! Editor UI layout with sidebar, floating panel, and toolbar.
 
 pub mod icons;
+pub mod messages;
 pub mod panels;
 pub mod state;
 pub mod systems;

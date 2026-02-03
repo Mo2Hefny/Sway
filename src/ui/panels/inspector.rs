@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::picking::prelude::Pickable;
 
 use crate::ui::icons::UiIcons;
+use crate::ui::messages::*;
 use crate::ui::state::*;
 use crate::ui::theme::palette::*;
 use crate::ui::theme::interaction::InteractionPalette;
@@ -50,7 +51,7 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
             panel.spawn((
                 Name::new("Inspector Title"),
                 InspectorTitle,
-                Text::new("Properties"),
+                Text::new(PAGE_PROPERTIES),
                 TextFont::from_font_size(16.0),
                 TextColor(TEXT),
                 Node {
@@ -69,7 +70,7 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
                 },
             )).with_children(|content| {
                 content.spawn((
-                    Text::new("No selection"),
+                    Text::new(PLACEHOLDER_NO_SELECTION),
                     TextFont::from_font_size(14.0),
                     TextColor(TEXT_SECONDARY),
                 ));

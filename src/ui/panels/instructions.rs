@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 use bevy::picking::prelude::Pickable;
 
+use crate::ui::messages::*;
 use crate::ui::widgets::{InstructionOverlayRoot, InstructionColumn, InstructionLine};
 
 use super::px;
@@ -33,13 +34,13 @@ pub fn spawn_instruction_overlay(commands: &mut Commands) {
                 ..default()
             },
         )).with_children(|column| {
-            spawn_instruction_line(column, "Select: S", hint_color);
-            spawn_instruction_line(column, "Add Node: N", hint_color);
-            spawn_instruction_line(column, "Add Edge: E", hint_color);
-            spawn_instruction_line(column, "Move: G", hint_color);
-            spawn_instruction_line(column, "Toggle UI: H", hint_color);
-            spawn_instruction_line(column, "Play: Space", hint_color);
-            spawn_instruction_line(column, "Stop: Shift+Space", hint_color);
+            spawn_instruction_line(column, HINT_SELECT, hint_color);
+            spawn_instruction_line(column, HINT_ADD_NODE, hint_color);
+            spawn_instruction_line(column, HINT_ADD_EDGE, hint_color);
+            spawn_instruction_line(column, HINT_MOVE, hint_color);
+            spawn_instruction_line(column, HINT_TOGGLE_UI, hint_color);
+            spawn_instruction_line(column, HINT_PLAY, hint_color);
+            spawn_instruction_line(column, HINT_STOP, hint_color);
         });
     });
 }

@@ -2,6 +2,8 @@
 
 use bevy::prelude::*;
 
+use super::messages::*;
+
 /// Visibility toggles for editor elements.
 #[derive(Resource, Clone, Debug)]
 pub struct DisplaySettings {
@@ -37,10 +39,10 @@ pub enum InspectorPage {
 impl InspectorPage {
     pub fn name(&self) -> &'static str {
         match self {
-            InspectorPage::Properties => "Properties",
-            InspectorPage::Transform => "Transform",
-            InspectorPage::Physics => "Physics",
-            InspectorPage::Constraints => "Constraints",
+            InspectorPage::Properties => PAGE_PROPERTIES,
+            InspectorPage::Transform => PAGE_TRANSFORM,
+            InspectorPage::Physics => PAGE_PHYSICS,
+            InspectorPage::Constraints => PAGE_CONSTRAINTS,
         }
     }
 }
@@ -72,10 +74,10 @@ pub enum EditorTool {
 impl EditorTool {
     pub fn name(&self) -> &'static str {
         match self {
-            EditorTool::Cursor => "Cursor",
-            EditorTool::AddNode => "Add Node",
-            EditorTool::AddEdge => "Add Edge",
-            EditorTool::Move => "Move",
+            EditorTool::Cursor => TOOL_CURSOR,
+            EditorTool::AddNode => TOOL_ADD_NODE,
+            EditorTool::AddEdge => TOOL_ADD_EDGE,
+            EditorTool::Move => TOOL_MOVE,
         }
     }
 }

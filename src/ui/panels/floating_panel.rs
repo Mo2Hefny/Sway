@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::picking::prelude::Pickable;
 
 use crate::ui::icons::UiIcons;
+use crate::ui::messages::*;
 use crate::ui::theme::palette::*;
 use crate::ui::theme::interaction::InteractionPalette;
 use crate::ui::widgets::{
@@ -88,9 +89,9 @@ pub fn spawn_floating_panel(commands: &mut Commands, icons: &UiIcons) {
                     ..default()
                 },
             )).with_children(|body| {
-                spawn_checkbox_row(body, "Show Skin", CheckboxSetting::ShowSkin, checkmark_icon.clone());
-                spawn_checkbox_row(body, "Show Edge", CheckboxSetting::ShowEdge, checkmark_icon.clone());
-                spawn_checkbox_row(body, "Show Nodes", CheckboxSetting::ShowNodes, checkmark_icon.clone());
+                spawn_checkbox_row(body, LABEL_SHOW_SKIN, CheckboxSetting::ShowSkin, checkmark_icon.clone());
+                spawn_checkbox_row(body, LABEL_SHOW_EDGE, CheckboxSetting::ShowEdge, checkmark_icon.clone());
+                spawn_checkbox_row(body, LABEL_SHOW_NODES, CheckboxSetting::ShowNodes, checkmark_icon.clone());
 
                 body.spawn(Node {
                     flex_grow: 1.0,
@@ -98,8 +99,8 @@ pub fn spawn_floating_panel(commands: &mut Commands, icons: &UiIcons) {
                     ..default()
                 });
 
-                spawn_icon_text_button(body, import_icon.clone(), "Import", ImportButton);
-                spawn_icon_text_button(body, export_icon.clone(), "Export", ExportButton);
+                spawn_icon_text_button(body, import_icon.clone(), BTN_IMPORT, ImportButton);
+                spawn_icon_text_button(body, export_icon.clone(), BTN_EXPORT, ExportButton);
             });
         });
     });
