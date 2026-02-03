@@ -1,0 +1,46 @@
+# Sway - Procedural Animation Engine
+
+[package]
+name = "sway"
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/sway"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "sway"
+path = "src/main.rs"
+
+[dependencies]
+# Bevy engine
+bevy = "0.18.0"
+
+# Math library
+glam = { version = "0.30", features = ["serde"] }
+
+# Serialization (for save/load, undo/redo)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# SVG rendering for icons
+resvg = { version = "0.46.0", features = ["default"] }
+
+# UUID for node/constraint identification
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+[features]
+default = []
+dev = []
+
+[lints.clippy]
+type_complexity = "allow"
+doc_markdown = "warn"
+manual_let_else = "warn"
+redundant_else = "warn"
+semicolon_if_nothing_returned = "warn"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(bevy_lint)'] }
