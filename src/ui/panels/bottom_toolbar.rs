@@ -7,7 +7,7 @@ use crate::ui::icons::UiIcons;
 use crate::ui::messages::*;
 use crate::ui::theme::palette::*;
 use crate::ui::theme::interaction::InteractionPalette;
-use crate::ui::widgets::{BottomToolbar, PlaybackButton};
+use crate::ui::widgets::{BottomToolbar, PlaybackButton, PlaybackAction};
 
 use super::px;
 
@@ -29,17 +29,18 @@ pub fn spawn_bottom_toolbar(commands: &mut Commands, icons: &UiIcons) {
         },
         BackgroundColor(SURFACE),
     )).with_children(|parent| {
-        spawn_playback_button(parent, PLAYBACK_PLAY, icons.play.clone());
-        spawn_playback_button(parent, PLAYBACK_PAUSE, icons.pause.clone());
-        spawn_playback_button(parent, PLAYBACK_STOP, icons.stop.clone());
+        spawn_playback_button(parent, PLAYBACK_PLAY, icons.play.clone(), PlaybackAction::Play);
+        spawn_playback_button(parent, PLAYBACK_PAUSE, icons.pause.clone(), PlaybackAction::Pause);
+        spawn_playback_button(parent, PLAYBACK_STOP, icons.stop.clone(), PlaybackAction::Stop);
     });
 }
 
 /// Spawns a playback control button with icon.
-fn spawn_playback_button(parent: &mut ChildSpawnerCommands, name: &str, icon: Handle<Image>) {
+fn spawn_playback_button(parent: &mut ChildSpawnerCommands, name: &str, icon: Handle<Image>, action: PlaybackAction) {
     parent.spawn((
         Name::new(format!("{} Button", name)),
         PlaybackButton,
+        action,
         Button,
         Node {
             width: px(32.0),

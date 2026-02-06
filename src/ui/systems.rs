@@ -10,6 +10,7 @@ use super::widgets::{
     ImportButton, ExportButton, CaretButton, CaretIcon, InspectorPanel,
     PageIconButton, PageIconFor, InspectorTitle, ToolButton, ToolButtonFor,
     ToolBarRoot, FloatingPanel, RightSidebarRoot, InstructionOverlayRoot, BottomToolbar,
+    PlaybackButton, PlaybackAction,
 };
 
 /// Handles checkbox button clicks and updates display settings.
@@ -166,10 +167,8 @@ pub fn handle_page_icon_clicks(
 ) {
     for (interaction, page_for) in &query {
         if *interaction == Interaction::Pressed {
-            if inspector_state.active_page != page_for.0 {
-                inspector_state.active_page = page_for.0;
-                info!("Inspector page: {:?}", inspector_state.active_page);
-            }
+            inspector_state.active_page = page_for.0;
+            info!("Inspector page changed to: {:?}", inspector_state.active_page);
         }
     }
 }
@@ -188,6 +187,7 @@ pub fn update_page_icon_styles(
         let is_active = page_for.0 == inspector_state.active_page;
         if is_active {
             commands.entity(entity).insert(Active);
+            info!("Page button {:?} set to active", page_for.0);
         } else {
             commands.entity(entity).remove::<Active>();
         }
@@ -215,10 +215,8 @@ pub fn handle_tool_button_clicks(
 ) {
     for (interaction, tool_for) in &query {
         if *interaction == Interaction::Pressed {
-            if tool_state.active != tool_for.0 {
-                tool_state.active = tool_for.0;
-                info!("Tool changed to: {:?}", tool_state.active);
-            }
+            tool_state.active = tool_for.0;
+            info!("Tool changed to: {:?}", tool_state.active);
         }
     }
 }
@@ -237,6 +235,7 @@ pub fn update_tool_button_styles(
         let is_active = tool_for.0 == tool_state.active;
         if is_active {
             commands.entity(entity).insert(Active);
+            info!("Tool button {:?} set to active", tool_for.0);
         } else {
             commands.entity(entity).remove::<Active>();
         }
@@ -307,5 +306,29 @@ pub fn update_ui_visibility(
     }
     for mut vis in &mut bottom_bar_query {
         *vis = visibility;
+    }
+}
+
+pub fn handle_playback_clicks(
+    mut playback: ResMut<PlaybackState>,
+    query: Query<(&Interaction, &PlaybackAction), (Changed<Interaction>, With<PlaybackButton>)>,
+) {
+    for (interaction, action) in &query {
+        if *interaction == Interaction::Pressed {
+            match action {
+                PlaybackAction::Play => {
+                    playback.play();
+                    info!("Playback: Playing");
+                }
+                PlaybackAction::Pause => {
+                    playback.pause();
+                    info!("Playback: Paused");
+                }
+                PlaybackAction::Stop => {
+                    playback.stop();
+                    info!("Playback: Stopped");
+                }
+            }
+        }
     }
 }

@@ -7,7 +7,7 @@ use crate::ui::icons::UiIcons;
 use crate::ui::messages::*;
 use crate::ui::state::*;
 use crate::ui::theme::palette::*;
-use crate::ui::theme::interaction::InteractionPalette;
+use crate::ui::theme::interaction::{InteractionPalette, Active};
 use crate::ui::widgets::{
     RightSidebarRoot, InspectorPanel, IconBar, CaretButton, CaretIcon,
     PageIconButton, PageIconImage, PageIconFor, InspectorTitle, InspectorContent,
@@ -39,6 +39,7 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
         parent.spawn((
             Name::new("Inspector Panel"),
             InspectorPanel,
+            Interaction::default(),
             Node {
                 width: px(280.0),
                 height: Val::Percent(100.0),
@@ -63,6 +64,7 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
             panel.spawn((
                 Name::new("Inspector Content"),
                 InspectorContent,
+                Interaction::default(),
                 Node {
                     flex_direction: FlexDirection::Column,
                     flex_grow: 1.0,
@@ -155,7 +157,7 @@ fn spawn_page_icon_button(
 ) {
     let bg_color = if is_active { SURFACE_HOVER } else { SURFACE };
     
-    parent.spawn((
+    let mut entity = parent.spawn((
         Name::new(format!("Page Icon: {}", page.name())),
         PageIconButton,
         PageIconFor(page),
@@ -170,12 +172,18 @@ fn spawn_page_icon_button(
         },
         BackgroundColor(bg_color),
         InteractionPalette {
-            none: bg_color,
+            none: SURFACE,
             hovered: SURFACE_HOVER,
             pressed: SURFACE_PRESSED,
             active: SURFACE_HOVER,
         },
-    )).with_children(|btn| {
+    ));
+
+    if is_active {
+        entity.insert(Active);
+    }
+
+    entity.with_children(|btn| {
         btn.spawn((
             PageIconImage,
             PageIconFor(page),

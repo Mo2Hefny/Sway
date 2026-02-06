@@ -1,5 +1,7 @@
 //! Sway - Procedural Animation Engine
 
+pub mod core;
+pub mod editor;
 pub mod ui;
 
 use bevy::{
@@ -32,12 +34,13 @@ impl Plugin for AppPlugin {
                     .into(),
                     ..default()
                 }),
-            LogDiagnosticsPlugin::default(),
-            FrameTimeDiagnosticsPlugin::default(),
+            // LogDiagnosticsPlugin::default(),
+            // FrameTimeDiagnosticsPlugin::default(),
         ));
 
         // Add Sway plugins in *dependency order*
         app.add_plugins((
+            editor::EditorPlugin,
             ui::UiPlugin,
         ));
 

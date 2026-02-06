@@ -7,6 +7,7 @@ use crate::ui::icons::UiIcons;
 use crate::ui::state::*;
 use crate::ui::theme::palette::*;
 use crate::ui::theme::interaction::InteractionPalette;
+use crate::ui::theme::interaction::Active;
 use crate::ui::widgets::{
     ToolBarRoot, ToolIconColumn, ToolButton, ToolButtonFor, ToolIconImage,
 };
@@ -59,7 +60,7 @@ fn spawn_tool_button(
 ) {
     let bg_color = if is_active { SURFACE_HOVER } else { SURFACE };
     
-    parent.spawn((
+    let mut entity = parent.spawn((
         Name::new(format!("Tool Button: {}", tool.name())),
         ToolButton,
         ToolButtonFor(tool),
@@ -74,12 +75,18 @@ fn spawn_tool_button(
         },
         BackgroundColor(bg_color),
         InteractionPalette {
-            none: bg_color,
+            none: SURFACE,
             hovered: SURFACE_HOVER,
             pressed: SURFACE_PRESSED,
             active: SURFACE_HOVER,
         },
-    )).with_children(|btn| {
+    ));
+
+    if is_active {
+        entity.insert(Active);
+    }
+
+    entity.with_children(|btn| {
         btn.spawn((
             ToolIconImage,
             ToolButtonFor(tool),

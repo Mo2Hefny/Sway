@@ -87,6 +87,38 @@ pub struct EditorToolState {
     pub active: EditorTool,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
+pub enum PlaybackMode {
+    Playing,
+    Paused,
+    #[default]
+    Stopped,
+}
+
+/// Shared resource that gates simulation systems.
+#[derive(Resource, Clone, Debug, Default, Reflect)]
+pub struct PlaybackState {
+    pub mode: PlaybackMode,
+}
+
+impl PlaybackState {
+    pub fn is_playing(&self) -> bool {
+        self.mode == PlaybackMode::Playing
+    }
+
+    pub fn play(&mut self) {
+        self.mode = PlaybackMode::Playing;
+    }
+
+    pub fn pause(&mut self) {
+        self.mode = PlaybackMode::Paused;
+    }
+
+    pub fn stop(&mut self) {
+        self.mode = PlaybackMode::Stopped;
+    }
+}
+
 #[derive(Resource, Clone, Debug)]
 pub struct UiVisibility {
     pub visible: bool,
@@ -96,4 +128,25 @@ impl Default for UiVisibility {
     fn default() -> Self {
         Self { visible: true }
     }
+}
+
+/// Resource tracking whether the cursor is currently over UI elements.
+#[derive(Resource, Clone, Debug, Default, Reflect)]
+pub struct InputState {
+    pub cursor_over_ui: bool,
+}
+
+impl InputState {
+    pub fn can_interact_with_world(&self) -> bool {
+        !self.cursor_over_ui
+    }
+}
+
+pub fn update_input_state(
+    mut input_state: ResMut<InputState>,
+    ui_interaction: Query<&Interaction>,
+) {
+    input_state.cursor_over_ui = ui_interaction
+        .iter()
+        .any(|interaction| *interaction != Interaction::None);
 }

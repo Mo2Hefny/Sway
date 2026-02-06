@@ -1,9 +1,13 @@
-//! UI marker components.
+//! UI marker components for layout and panel elements.
 
 use bevy::prelude::*;
+use bevy::picking::prelude::Pickable;
 
-use super::theme::interaction::InteractionPalette;
-use super::state::{InspectorPage, EditorTool};
+use crate::ui::state::{InspectorPage, EditorTool};
+
+// ============================================================================
+// PANEL MARKERS
+// ============================================================================
 
 #[derive(Component, Debug)]
 pub struct FloatingPanel;
@@ -42,6 +46,10 @@ pub struct ImportButton;
 #[derive(Component, Debug)]
 pub struct ExportButton;
 
+// ============================================================================
+// INSPECTOR MARKERS
+// ============================================================================
+
 #[derive(Component, Debug)]
 pub struct RightSidebarRoot;
 
@@ -72,6 +80,10 @@ pub struct InspectorTitle;
 #[derive(Component, Debug)]
 pub struct InspectorContent;
 
+// ============================================================================
+// TOOLBAR MARKERS
+// ============================================================================
+
 #[derive(Component, Debug)]
 pub struct ToolBarRoot;
 
@@ -100,6 +112,10 @@ pub enum PlaybackAction {
     Stop,
 }
 
+// ============================================================================
+// OVERLAY MARKERS
+// ============================================================================
+
 #[derive(Component, Debug)]
 pub struct InstructionOverlayRoot;
 
@@ -108,6 +124,10 @@ pub struct InstructionColumn;
 
 #[derive(Component, Debug)]
 pub struct InstructionLine;
+
+// ============================================================================
+// ROOT
+// ============================================================================
 
 #[derive(Component, Debug)]
 pub struct UiRoot;
@@ -123,34 +143,4 @@ pub fn ui_root(name: &str) -> impl Bundle {
         },
         Pickable::IGNORE,
     )
-}
-
-/// Updates button colors based on both interaction state (hover/press) and active state.
-pub fn update_interaction_colors(
-    mut query: Query<
-        (
-            &Interaction,
-            &InteractionPalette,
-            &mut BackgroundColor,
-            Option<&super::theme::interaction::Active>,
-        ),
-        Or<(Changed<Interaction>, Changed<super::theme::interaction::Active>)>,
-    >,
-) {
-    for (interaction, palette, mut background, active) in &mut query {
-        let color = if active.is_some() {
-            match interaction {
-                Interaction::None => palette.active,
-                Interaction::Hovered => palette.hovered,
-                Interaction::Pressed => palette.pressed,
-            }
-        } else {
-            match interaction {
-                Interaction::None => palette.none,
-                Interaction::Hovered => palette.hovered,
-                Interaction::Pressed => palette.pressed,
-            }
-        };
-        *background = BackgroundColor(color);
-    }
 }
