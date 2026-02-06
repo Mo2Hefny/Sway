@@ -32,7 +32,6 @@ pub enum InspectorPage {
     #[default]
     Properties,
     Transform,
-    Physics,
     Constraints,
 }
 
@@ -41,7 +40,6 @@ impl InspectorPage {
         match self {
             InspectorPage::Properties => PAGE_PROPERTIES,
             InspectorPage::Transform => PAGE_TRANSFORM,
-            InspectorPage::Physics => PAGE_PHYSICS,
             InspectorPage::Constraints => PAGE_CONSTRAINTS,
         }
     }

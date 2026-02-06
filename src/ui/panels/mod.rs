@@ -22,6 +22,8 @@ pub use inspector_content::{
     handle_function_input_keyboard,
     update_focused_input_style,
     handle_click_outside,
+    handle_constraint_delete,
+    live_sync_inspector_values,
     TextInputFocus,
     FunctionInputFocus,
     InspectorFieldKind,

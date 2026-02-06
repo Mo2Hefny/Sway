@@ -63,6 +63,7 @@ impl Plugin for UiPlugin {
                 panels::handle_inspector_checkbox_click,
                 panels::handle_inspector_dropdown_click,
                 panels::handle_dropdown_option_click,
+                panels::handle_constraint_delete,
             ),
         );
 
@@ -77,6 +78,7 @@ impl Plugin for UiPlugin {
                 panels::handle_function_input_keyboard,
                 panels::update_focused_input_style,
                 panels::handle_click_outside,
+                panels::live_sync_inspector_values,
             ),
         );
 

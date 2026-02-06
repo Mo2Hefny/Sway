@@ -14,7 +14,6 @@ pub struct UiIcons {
     pub caret_left: Handle<Image>,
     pub properties: Handle<Image>,
     pub transform: Handle<Image>,
-    pub physics: Handle<Image>,
     pub constraints: Handle<Image>,
     pub cursor_tool: Handle<Image>,
     pub add_node_tool: Handle<Image>,
@@ -103,14 +102,9 @@ impl UiIcons {
                 include_bytes!("../assets/icons/transform.svg"),
                 ICON_SIZE,
             ),
-            physics: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/vector.svg"),
-                ICON_SIZE,
-            ),
             constraints: Self::rasterize_svg(
                 images,
-                include_bytes!("../assets/icons/cursor.svg"),
+                include_bytes!("../assets/icons/vector.svg"),
                 ICON_SIZE,
             ),
             cursor_tool: Self::rasterize_svg(

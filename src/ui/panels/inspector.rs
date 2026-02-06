@@ -20,7 +20,6 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
     let caret_right_icon = icons.caret_right.clone();
     let properties_icon = icons.properties.clone();
     let transform_icon = icons.transform.clone();
-    let physics_icon = icons.physics.clone();
     let constraints_icon = icons.constraints.clone();
     
     commands.spawn((
@@ -142,7 +141,6 @@ pub fn spawn_right_sidebar(commands: &mut Commands, icons: &UiIcons) {
 
             spawn_page_icon_button(bar, InspectorPage::Properties, properties_icon.clone(), true);
             spawn_page_icon_button(bar, InspectorPage::Transform, transform_icon.clone(), false);
-            spawn_page_icon_button(bar, InspectorPage::Physics, physics_icon.clone(), false);
             spawn_page_icon_button(bar, InspectorPage::Constraints, constraints_icon.clone(), false);
         });
     });

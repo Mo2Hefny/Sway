@@ -16,7 +16,6 @@ pub const BTN_EXPORT: &str = "Export";
 
 pub const PAGE_PROPERTIES: &str = "Properties";
 pub const PAGE_TRANSFORM: &str = "Transform";
-pub const PAGE_PHYSICS: &str = "Physics";
 pub const PAGE_CONSTRAINTS: &str = "Constraints";
 pub const PLACEHOLDER_NO_SELECTION: &str = "No selection";
 
