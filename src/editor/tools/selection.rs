@@ -5,6 +5,9 @@ use bevy::prelude::*;
 use crate::core::Node as SimNode;
 use crate::ui::state::InputState;
 use crate::editor::constants::*;
+use crate::editor::components::{NodeVisual, Selected, Selectable};
+use crate::editor::visuals::node::get_node_color;
+use super::input::{cursor_world_pos, pick_node_at};
 use crate::ui::state::{EditorTool, EditorToolState};
 
 /// Resource tracking the currently selected entity.
@@ -27,14 +30,7 @@ impl Selection {
     }
 }
 
-/// Marker for entities that are currently selected.
-#[derive(Component, Clone, Debug, Reflect)]
-pub struct Selected;
-
-/// Marker to make nodes selectable via picking.
-#[derive(Component, Clone, Debug, Default, Reflect)]
-pub struct Selectable;
-
+/// Handles left-clicks to select nodes in the editor.
 pub fn handle_node_selection(
     mut commands: Commands,
     mut selection: ResMut<Selection>,
@@ -46,33 +42,15 @@ pub fn handle_node_selection(
     node_query: Query<(Entity, &Transform, &SimNode), With<Selectable>>,
     selected_query: Query<Entity, With<Selected>>,
 ) {
-    if tool_state.active != EditorTool::Cursor {
+    if tool_state.active != EditorTool::Cursor
+        || !mouse_button.just_pressed(MouseButton::Left)
+        || !input_state.can_interact_with_world()
+    {
         return;
     }
 
-    if !mouse_button.just_pressed(MouseButton::Left) {
-        return;
-    }
-
-    if !input_state.can_interact_with_world() {
-        return;
-    }
-
-    let Ok(window) = windows.single() else { return };
-    let Some(cursor_pos) = window.cursor_position() else { return };
-    let Ok((camera, camera_transform)) = cameras.single() else { return };
-    let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) else { return };
-
-    let mut clicked_node = None;
-    for (entity, transform, node) in node_query.iter() {
-        let node_pos = transform.translation.truncate();
-        let distance = world_pos.distance(node_pos);
-        if distance <= node.radius {
-            clicked_node = Some(entity);
-            info!("Selected node at ({:.1}, {:.1})", node_pos.x, node_pos.y);
-            break;
-        }
-    }
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
+    let clicked_node = pick_node_at(world_pos, 0.0, &node_query);
 
     for prev_selected in selected_query.iter() {
         commands.entity(prev_selected).remove::<Selected>();
@@ -82,15 +60,16 @@ pub fn handle_node_selection(
         selection.select(entity);
         commands.entity(entity).insert(Selected);
     } else {
-        info!("Selection cleared");
+        selection.deselect();
     }
 }
 
+/// Updates the visual appearance of nodes based on selection state.
 pub fn update_selection_visuals(
     selection: Res<Selection>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     node_query: Query<(Entity, &SimNode, &Children)>,
-    visual_query: Query<&MeshMaterial2d<ColorMaterial>>,
+    visual_query: Query<&MeshMaterial2d<ColorMaterial>, With<NodeVisual>>,
 ) {
     if !selection.is_changed() {
         return;
@@ -99,18 +78,12 @@ pub fn update_selection_visuals(
     for (entity, node, children) in node_query.iter() {
         let is_selected = selection.is_selected(entity);
 
+        let color = if is_selected { SELECTION_COLOR } else { get_node_color(node.node_type) };
+
         for child in children.iter() {
             if let Ok(material_handle) = visual_query.get(child) {
                 if let Some(material) = materials.get_mut(&material_handle.0) {
-                    material.color = if is_selected {
-                        SELECTION_COLOR
-                    } else {
-                        match node.node_type {
-                            crate::core::NodeType::Anchor => ANCHOR_NODE_COLOR,
-                            crate::core::NodeType::Leg => LEG_NODE_COLOR,
-                            crate::core::NodeType::Normal => NORMAL_NODE_COLOR,
-                        }
-                    };
+                    material.color = color;
                 }
             }
         }

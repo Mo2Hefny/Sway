@@ -1,8 +1,8 @@
-//! Playground boundary definition.
+//! Playground boundary resource.
 
 use bevy::prelude::*;
 
-use super::constants::*;
+use crate::core::constants::*;
 
 /// Defines the rectangular playground area in world space.
 #[derive(Resource, Clone, Debug, Reflect)]
@@ -11,9 +11,6 @@ pub struct Playground {
     pub border_margin: f32,
     pub stroke_width: f32,
     pub impact_damping: f32,
-    pub outside_color: Color,
-    pub border_color: Color,
-    pub fill_color: Color,
 }
 
 impl Default for Playground {
@@ -23,9 +20,6 @@ impl Default for Playground {
             border_margin: BORDER_MARGIN,
             stroke_width: STROKE_WIDTH,
             impact_damping: IMPACT_DAMPING,
-            outside_color: PLAYGROUND_OUTSIDE_COLOR,
-            border_color: PLAYGROUND_BORDER_COLOR,
-            fill_color: PLAYGROUND_FILL_COLOR,
         }
     }
 }

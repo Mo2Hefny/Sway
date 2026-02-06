@@ -5,8 +5,10 @@ use bevy::prelude::*;
 use crate::core::{Node as SimNode, NodeType};
 use crate::ui::state::InputState;
 use crate::editor::constants::*;
+use super::input::cursor_world_pos;
 use crate::ui::state::{EditorTool, EditorToolState};
 
+/// Handles left-clicks to add new nodes to the simulation.
 pub fn handle_add_node_tool(
     mut commands: Commands,
     tool_state: Res<EditorToolState>,
@@ -15,24 +17,14 @@ pub fn handle_add_node_tool(
     windows: Query<&Window>,
     cameras: Query<(&Camera, &GlobalTransform)>,
 ) {
-    if tool_state.active != EditorTool::AddNode {
+    if tool_state.active != EditorTool::AddNode
+        || !mouse_button.just_pressed(MouseButton::Left)
+        || !input_state.can_interact_with_world()
+    {
         return;
     }
 
-    if !mouse_button.just_pressed(MouseButton::Left) {
-        return;
-    }
-
-    if !input_state.can_interact_with_world() {
-        return;
-    }
-
-    let Ok(window) = windows.single() else { return };
-    let Some(cursor_pos) = window.cursor_position() else { return };
-    let Ok((camera, camera_transform)) = cameras.single() else { return };
-    let Ok(world_pos) = camera.viewport_to_world_2d(camera_transform, cursor_pos) else { return };
-
-    info!("Adding node at position: ({:.1}, {:.1})", world_pos.x, world_pos.y);
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
 
     commands.spawn((
         Name::new("Node"),

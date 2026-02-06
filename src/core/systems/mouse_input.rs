@@ -1,9 +1,9 @@
-//! Mouse-driven input systems for simulation nodes.
+//! Mouse-follow system for anchor nodes.
 
 use bevy::prelude::*;
 
-use super::constants::FOLLOW_SPEED;
-use super::{Node, NodeType};
+use crate::core::constants::FOLLOW_SPEED;
+use crate::core::components::{Node, NodeType};
 use crate::ui::state::PlaybackState;
 
 /// Sets acceleration on eligible anchor nodes toward the mouse cursor.

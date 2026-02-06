@@ -1,12 +1,11 @@
-//! Core simulation components.
+//! Core simulation module.
 
+pub mod components;
 pub mod constants;
-pub mod mouse_input;
-pub mod node;
-pub mod physics;
-pub mod playground;
+pub mod systems;
 
-pub use mouse_input::follow_mouse_system;
-pub use node::{Node, NodeType};
-pub use physics::{boundary_collision_system, verlet_integration_system};
-pub use playground::Playground;
+pub use components::{DistanceConstraint, Node, NodeType, Playground};
+pub use systems::{
+    constraint_solving_system, follow_mouse_system,
+    boundary_collision_system, verlet_integration_system,
+};

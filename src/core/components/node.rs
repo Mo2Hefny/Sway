@@ -1,4 +1,4 @@
-//! Node component definition.
+//! Verlet simulation node and node type definitions.
 
 use bevy::prelude::*;
 
@@ -12,6 +12,7 @@ pub enum NodeType {
 }
 
 impl NodeType {
+    /// Returns the display name for this node type.
     pub fn name(&self) -> &'static str {
         match self {
             NodeType::Anchor => "Anchor",
@@ -21,7 +22,7 @@ impl NodeType {
     }
 }
 
-/// Simulation node representing a point in spine.
+/// Simulation node — a Verlet-integrated point in the spine.
 #[derive(Component, Clone, Debug, Reflect)]
 #[require(Transform)]
 pub struct Node {
@@ -51,6 +52,7 @@ impl Default for Node {
 }
 
 impl Node {
+    /// Creates a node at the given position.
     pub fn new(position: Vec2) -> Self {
         Self {
             position,
@@ -59,21 +61,25 @@ impl Node {
         }
     }
 
+    /// Sets the collision radius.
     pub fn with_radius(mut self, radius: f32) -> Self {
         self.radius = radius;
         self
     }
 
+    /// Sets the node type.
     pub fn with_node_type(mut self, node_type: NodeType) -> Self {
         self.node_type = node_type;
         self
     }
 
+    /// Enables or disables mouse-following behavior.
     pub fn with_follow_mouse(mut self, follow_mouse: bool) -> Self {
         self.follow_mouse = follow_mouse;
         self
     }
 
+    /// Advances position by one Verlet integration step.
     pub fn verlet_step(&mut self, dt: f32) {
         let new_position = 2.0 * self.position - self.prev_position + self.acceleration * dt;
         self.prev_position = self.position;
