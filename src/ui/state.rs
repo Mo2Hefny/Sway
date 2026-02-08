@@ -10,6 +10,7 @@ pub struct DisplaySettings {
     pub show_skin: bool,
     pub show_edge: bool,
     pub show_nodes: bool,
+    pub show_debug: bool,
 }
 
 impl Default for DisplaySettings {
@@ -18,6 +19,7 @@ impl Default for DisplaySettings {
             show_skin: true,
             show_edge: true,
             show_nodes: true,
+            show_debug: true,
         }
     }
 }
@@ -114,6 +116,13 @@ impl PlaybackState {
 
     pub fn stop(&mut self) {
         self.mode = PlaybackMode::Stopped;
+    }
+
+    pub fn toggle(&mut self) {
+        self.mode = match self.mode {
+            PlaybackMode::Playing => PlaybackMode::Paused,
+            PlaybackMode::Paused | PlaybackMode::Stopped => PlaybackMode::Playing,
+        };
     }
 }
 

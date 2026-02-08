@@ -2,6 +2,12 @@
 
 use bevy::prelude::*;
 
+use crate::core::{
+    Node as SimNode, DistanceConstraint, 
+    build_scene_data, spawn_scene_data, export_to_file, import_from_file,
+};
+use crate::editor::tools::selection::Selection;
+use crate::editor::components::{NodeVisual, ConstraintVisual, ConstraintPreview};
 use super::icons::UiIcons;
 use super::state::*;
 use super::theme::interaction::Active;
@@ -33,6 +39,10 @@ pub fn handle_checkbox_clicks(
                     display_settings.show_nodes = !display_settings.show_nodes;
                     info!("Show Nodes: {}", display_settings.show_nodes);
                 }
+                CheckboxSetting::ShowDebug => {
+                    display_settings.show_debug = !display_settings.show_debug;
+                    info!("Show Debug: {}", display_settings.show_debug);
+                }
             }
         }
     }
@@ -52,6 +62,7 @@ pub fn update_checkbox_icons(
             CheckboxSetting::ShowSkin => display_settings.show_skin,
             CheckboxSetting::ShowEdge => display_settings.show_edge,
             CheckboxSetting::ShowNodes => display_settings.show_nodes,
+            CheckboxSetting::ShowDebug => display_settings.show_debug,
         };
         *visibility = if is_checked {
             Visibility::Inherited
@@ -94,24 +105,56 @@ pub fn update_panel_visibility(
     }
 }
 
-/// Handles import button clicks.
+/// Handles import button clicks — opens file dialog and loads a scene.
 pub fn handle_import_click(
+    mut commands: Commands,
     query: Query<&Interaction, (Changed<Interaction>, With<ImportButton>)>,
+    existing_nodes: Query<Entity, With<SimNode>>,
+    existing_constraints: Query<Entity, With<DistanceConstraint>>,
+    existing_visuals: Query<Entity, With<NodeVisual>>,
+    existing_con_visuals: Query<Entity, With<ConstraintVisual>>,
+    existing_previews: Query<Entity, With<ConstraintPreview>>,
+    mut selection: ResMut<Selection>,
 ) {
     for interaction in &query {
-        if *interaction == Interaction::Pressed {
-            info!("Import clicked");
+        if *interaction != Interaction::Pressed {
+            continue;
         }
+
+        let Some(scene) = import_from_file() else { return };
+
+        // Clear selection
+        selection.deselect();
+
+        // Despawn all existing simulation entities (children despawn automatically)
+        for entity in existing_con_visuals.iter() {
+            commands.entity(entity).despawn();
+        }
+        for entity in existing_previews.iter() {
+            commands.entity(entity).despawn();
+        }
+        for entity in existing_constraints.iter() {
+            commands.entity(entity).despawn();
+        }
+        for entity in existing_nodes.iter() {
+            commands.entity(entity).despawn();
+        }
+
+        // Spawn new scene
+        spawn_scene_data(&mut commands, &scene);
     }
 }
 
-/// Handles export button clicks.
+/// Handles export button clicks — opens file dialog and saves the scene.
 pub fn handle_export_click(
     query: Query<&Interaction, (Changed<Interaction>, With<ExportButton>)>,
+    nodes: Query<(Entity, &mut SimNode)>,
+    constraints: Query<(Entity, &DistanceConstraint)>,
 ) {
     for interaction in &query {
         if *interaction == Interaction::Pressed {
-            info!("Export clicked");
+            let scene = build_scene_data(&nodes, &constraints);
+            export_to_file(&scene);
         }
     }
 }

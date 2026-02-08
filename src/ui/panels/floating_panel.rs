@@ -92,6 +92,7 @@ pub fn spawn_floating_panel(commands: &mut Commands, icons: &UiIcons) {
                 spawn_checkbox_row(body, LABEL_SHOW_SKIN, CheckboxSetting::ShowSkin, checkmark_icon.clone());
                 spawn_checkbox_row(body, LABEL_SHOW_EDGE, CheckboxSetting::ShowEdge, checkmark_icon.clone());
                 spawn_checkbox_row(body, LABEL_SHOW_NODES, CheckboxSetting::ShowNodes, checkmark_icon.clone());
+                spawn_checkbox_row(body, LABEL_SHOW_DEBUG, CheckboxSetting::ShowDebug, checkmark_icon.clone());
 
                 body.spawn(Node {
                     flex_grow: 1.0,

@@ -35,6 +35,7 @@ pub enum CheckboxSetting {
     ShowSkin,
     ShowEdge,
     ShowNodes,
+    ShowDebug,
 }
 
 #[derive(Component, Debug)]

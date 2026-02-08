@@ -9,6 +9,7 @@ use bevy::{
     prelude::*,
     asset::AssetMetaCheck,
 };
+use bevy_egui::EguiPlugin;
 
 /// Main Sway application plugin.
 pub struct AppPlugin;
@@ -40,6 +41,7 @@ impl Plugin for AppPlugin {
 
         // Add Sway plugins in *dependency order*
         app.add_plugins((
+            EguiPlugin::default(),
             editor::EditorPlugin,
             ui::UiPlugin,
         ));

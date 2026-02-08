@@ -46,7 +46,6 @@ pub struct NoSelectionText;
 #[derive(Component, Debug, Clone, Copy)]
 pub struct ConstraintDeleteButton(pub Entity);
 
-/// Field kinds specific to the node inspector.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum InspectorFieldKind {
     #[default]
@@ -54,13 +53,16 @@ pub enum InspectorFieldKind {
     PositionY,
     AccelerationX,
     AccelerationY,
-    AccFnX,
-    AccFnY,
     Radius,
-    FollowMouse,
     NodeType,
     ConstraintLength(Entity),
+    AccFnX,
+    AccFnY,
 }
+
+// ============================================================================
+// RESOURCES
+// ============================================================================
 
 pub type TextInputFocus = GenericTextInputFocus<InspectorFieldKind>;
 pub type FunctionInputFocus = GenericFunctionInputFocus<InspectorFieldKind>;
@@ -69,106 +71,69 @@ pub type FunctionInputFocus = GenericFunctionInputFocus<InspectorFieldKind>;
 // CONSTANTS
 // ============================================================================
 
-const SECTION_PADDING: f32 = 8.0;
-const ROW_HEIGHT: f32 = 22.0;
-const ROW_SPACING: f32 = 1.0;
-const LABEL_WIDTH: f32 = 85.0;
+const SECTION_HEADER: Color = palette::SURFACE_HOVER;
+const SECTION_PADDING: f32 = 12.0;
+const ROW_HEIGHT: f32 = 32.0;
+const ROW_SPACING: f32 = 2.0;
+const LABEL_WIDTH: f32 = 90.0;
+const LABEL_FONT_SIZE: f32 = 13.0;
 const HEADER_FONT_SIZE: f32 = 11.0;
-const LABEL_FONT_SIZE: f32 = 11.0;
 
 const RADIUS_MIN: f32 = 4.0;
 const RADIUS_MAX: f32 = 50.0;
-const ACCELERATION_MIN: f32 = -10.0;
-const ACCELERATION_MAX: f32 = 10.0;
 
+const AXIS_X: &str = "X";
+const AXIS_Y: &str = "Y";
 
 // ============================================================================
-// MAIN UPDATE SYSTEM
+// SPAWNING
 // ============================================================================
 
+/// Updates the inspector content when selection or inspector state changes.
 pub fn update_inspector_content(
     mut commands: Commands,
     selection: Res<Selection>,
     inspector_state: Res<InspectorState>,
     playground: Res<Playground>,
+    content_query: Query<Entity, With<InspectorContent>>,
+    property_rows: Query<Entity, Or<(With<InspectorPropertyRow>, With<InspectorSection>, With<NoSelectionText>)>>,
     node_query: Query<&SimNode>,
     constraint_query: Query<(Entity, &DistanceConstraint)>,
-    content_query: Query<Entity, With<InspectorContent>>,
-    property_rows: Query<Entity, Or<(With<InspectorPropertyRow>, With<InspectorSection>)>>,
-    no_selection_query: Query<Entity, With<NoSelectionText>>,
 ) {
     if !selection.is_changed() && !inspector_state.is_changed() {
         return;
     }
 
+    // Clear existing content
     for entity in property_rows.iter() {
         commands.entity(entity).despawn();
     }
-    for entity in no_selection_query.iter() {
-        commands.entity(entity).despawn();
-    }
 
-    let Ok(content_entity) = content_query.single() else {
+    let Ok(content_entity) = content_query.get_single() else { return };
+
+    let Some(selected_entity) = selection.entity else {
+        commands.entity(content_entity).with_children(|parent| {
+            parent.spawn((
+                NoSelectionText,
+                Text::new(PLACEHOLDER_NO_SELECTION),
+                TextFont::from_font_size(14.0),
+                TextColor(TEXT_SECONDARY),
+                Node {
+                    margin: UiRect::top(Val::Percent(40.0)),
+                    align_self: AlignSelf::Center,
+                    ..default()
+                }
+            ));
+        });
         return;
     };
 
-    match selection.entity {
-        Some(selected_entity) => {
-            if let Ok(node) = node_query.get(selected_entity) {
-                spawn_page_content(
-                    &mut commands, content_entity, node, selected_entity,
-                    inspector_state.active_page, &playground,
-                    &constraint_query, &node_query,
-                );
-            }
-        }
-        None => {
-            spawn_no_selection(&mut commands, content_entity);
-        }
-    }
-}
+    let Ok(node) = node_query.get(selected_entity) else { return };
 
-// ============================================================================
-// INSPECTOR LAYOUT
-// ============================================================================
-
-fn spawn_no_selection(commands: &mut Commands, content_entity: Entity) {
-    commands.entity(content_entity).with_children(|parent| {
-        parent.spawn((
-            NoSelectionText,
-            UiNode {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-        )).with_children(|container| {
-            container.spawn((
-                Text::new(PLACEHOLDER_NO_SELECTION),
-                TextFont::from_font_size(13.0),
-                TextColor(TEXT_DISABLED),
-            ));
-        });
-    });
-}
-
-fn spawn_page_content(
-    commands: &mut Commands,
-    content_entity: Entity,
-    node: &SimNode,
-    selected_entity: Entity,
-    page: InspectorPage,
-    playground: &Playground,
-    constraint_query: &Query<(Entity, &DistanceConstraint)>,
-    node_query: &Query<&SimNode>,
-) {
-    match page {
-        InspectorPage::Properties => spawn_properties_page(commands, content_entity, node),
-        InspectorPage::Transform => spawn_transform_page(commands, content_entity, node, playground),
-        InspectorPage::Constraints => spawn_constraints_page(
-            commands, content_entity, selected_entity, constraint_query, node_query,
-        ),
+    match inspector_state.active_page {
+        InspectorPage::Properties => spawn_properties_page(&mut commands, content_entity, node),
+        InspectorPage::Transform => spawn_transform_page(&mut commands, content_entity, node, &playground),
+        InspectorPage::Constraints => spawn_constraints_page(&mut commands, content_entity, selected_entity, &constraint_query, &node_query),
     }
 }
 
@@ -176,7 +141,6 @@ fn spawn_properties_page(commands: &mut Commands, content_entity: Entity, node: 
     commands.entity(content_entity).with_children(|parent| {
         spawn_section_header(parent, "Node Settings");
         spawn_dropdown_field(parent, "Node Type", node.node_type, InspectorFieldKind::NodeType);
-        spawn_checkbox_field(parent, "Follow Mouse", node.follow_mouse, InspectorFieldKind::FollowMouse);
     });
 }
 
@@ -190,19 +154,15 @@ fn spawn_transform_page(commands: &mut Commands, content_entity: Entity, node: &
 
     commands.entity(content_entity).with_children(|parent| {
         spawn_section_header(parent, "Transform");
-        spawn_vec2_field_asymmetric(parent, "Position", node.position,
+        spawn_vec2_field_asymmetric(parent, "Position", node.position, 
             InspectorFieldKind::PositionX, InspectorFieldKind::PositionY,
             pos_min_x, pos_max_x, pos_min_y, pos_max_y);
-        spawn_number_field(parent, "Radius", node.radius,
+        spawn_number_field(parent, "Radius", node.radius, 
             InspectorFieldKind::Radius, RADIUS_MIN, RADIUS_MAX);
 
         spawn_section_header(parent, "Acceleration");
-        spawn_acceleration_axis(parent, "X", AXIS_X,
-            node.acceleration.x, &node.acc_fn_x,
-            InspectorFieldKind::AccelerationX, InspectorFieldKind::AccFnX);
-        spawn_acceleration_axis(parent, "Y", AXIS_Y,
-            node.acceleration.y, &node.acc_fn_y,
-            InspectorFieldKind::AccelerationY, InspectorFieldKind::AccFnY);
+        spawn_function_input(parent, "X Axis", &node.acc_fn_x, InspectorFieldKind::AccFnX);
+        spawn_function_input(parent, "Y Axis", &node.acc_fn_y, InspectorFieldKind::AccFnY);
     });
 }
 
@@ -345,74 +305,7 @@ pub fn handle_constraint_delete(
     }
 }
 
-/// Spawns two rows for one acceleration axis
-fn spawn_acceleration_axis(
-    parent: &mut ChildSpawnerCommands,
-    axis_name: &str,
-    axis_color: Color,
-    value: f32,
-    expr: &str,
-    value_field: InspectorFieldKind,
-    fn_field: InspectorFieldKind,
-) {
-    // Row 1: axis label + numeric value
-    parent.spawn((
-        Name::new(format!("Accel {} Value", axis_name)),
-        InspectorPropertyRow,
-        UiNode {
-            width: Val::Percent(100.0),
-            height: px(ROW_HEIGHT),
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            padding: UiRect::horizontal(px(SECTION_PADDING)),
-            margin: UiRect::vertical(px(ROW_SPACING)),
-            ..default()
-        },
-    )).with_children(|row| {
-        spawn_property_label(row, axis_name);
 
-        row.spawn((
-            UiNode {
-                flex_grow: 1.0,
-                flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::FlexEnd,
-                ..default()
-            },
-        )).with_children(|container| {
-            spawn_axis_input(container, axis_color, value,
-                InputField { kind: value_field, min: ACCELERATION_MIN, max: ACCELERATION_MAX }, 120.0);
-        });
-    });
-
-    // Row 2: function expression input
-    parent.spawn((
-        Name::new(format!("Accel {} Function", axis_name)),
-        InspectorPropertyRow,
-        UiNode {
-            width: Val::Percent(100.0),
-            height: px(ROW_HEIGHT),
-            flex_direction: FlexDirection::Row,
-            align_items: AlignItems::Center,
-            padding: UiRect::horizontal(px(SECTION_PADDING)),
-            margin: UiRect::bottom(px(4.0)),
-            ..default()
-        },
-    )).with_children(|row| {
-        spawn_property_label(row, "");
-
-        row.spawn((
-            UiNode {
-                flex_grow: 1.0,
-                flex_direction: FlexDirection::Row,
-                justify_content: JustifyContent::FlexEnd,
-                ..default()
-            },
-        )).with_children(|container| {
-            spawn_function_input(container, expr,
-                FunctionField { kind: fn_field }, 120.0);
-        });
-    });
-}
 
 // ============================================================================
 // SECTION HELPERS
@@ -955,10 +848,8 @@ pub fn update_focused_input_style(
 /// Clear focus when clicking outside inputs
 pub fn handle_click_outside(
     mut focus: ResMut<TextInputFocus>,
-    mut fn_focus: ResMut<FunctionInputFocus>,
     mouse: Res<ButtonInput<MouseButton>>,
     input_query: Query<&Interaction, With<TextInput>>,
-    fn_input_query: Query<&Interaction, With<FunctionInput>>,
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
     mut constraint_query: Query<&mut DistanceConstraint>,
@@ -971,8 +862,7 @@ pub fn handle_click_outside(
         return;
     }
     
-    let clicking_input = input_query.iter().any(|i| *i != Interaction::None)
-        || fn_input_query.iter().any(|i| *i != Interaction::None);
+    let clicking_input = input_query.iter().any(|i| *i != Interaction::None);
     
     if !clicking_input && focus.entity.is_some() {
         if let (Some(field_kind), Ok(value)) = (focus.field_kind, focus.buffer.parse::<f32>()) {
@@ -983,58 +873,22 @@ pub fn handle_click_outside(
         focus.buffer.clear();
         focus.field_kind = None;
     }
-
-    if !clicking_input && fn_focus.entity.is_some() {
-        if let Some(field_kind) = fn_focus.field_kind {
-            apply_function_value(&selection, &mut node_query, field_kind, &fn_focus.buffer);
-        }
-        fn_focus.entity = None;
-        fn_focus.buffer.clear();
-        fn_focus.field_kind = None;
-    }
 }
 
 pub fn handle_inspector_checkbox_click(
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
     checkbox_query: Query<(Entity, &Interaction, &InputField<InspectorFieldKind>), (Changed<Interaction>, With<Checkbox>)>,
-    children_query: Query<&Children>,
-    mut mark_query: Query<&mut Visibility, With<CheckboxMark>>,
-    mut bg_query: Query<(&mut BackgroundColor, &mut BorderColor, &mut InteractionPalette), With<Checkbox>>,
 ) {
-    for (checkbox_entity, interaction, field) in checkbox_query.iter() {
+    for (_checkbox_entity, interaction, _field) in checkbox_query.iter() {
         if *interaction != Interaction::Pressed {
             continue;
         }
 
         let Some(selected_entity) = selection.entity else { continue };
-        let Ok(mut node) = node_query.get_mut(selected_entity) else { continue };
+        let Ok(_node) = node_query.get_mut(selected_entity) else { continue };
 
-        if field.kind == InspectorFieldKind::FollowMouse {
-            node.follow_mouse = !node.follow_mouse;
-            let checked = node.follow_mouse;
-
-            if let Ok((mut bg, mut border, mut palette)) = bg_query.get_mut(checkbox_entity) {
-                let new_bg = if checked { ACCENT } else { INPUT_FIELD };
-                let new_border = if checked { ACCENT } else { BORDER };
-                *bg = BackgroundColor(new_bg);
-                *border = BorderColor::all(new_border);
-                *palette = InteractionPalette {
-                    none: new_bg,
-                    hovered: if checked { ACCENT_HOVER } else { INPUT_FIELD_HOVER },
-                    pressed: if checked { ACCENT_PRESSED } else { INPUT_FIELD_FOCUS },
-                    active: ACCENT,
-                };
-            }
-
-            if let Ok(children) = children_query.get(checkbox_entity) {
-                for child in children.iter() {
-                    if let Ok(mut vis) = mark_query.get_mut(child) {
-                        *vis = if checked { Visibility::Inherited } else { Visibility::Hidden };
-                    }
-                }
-            }
-        }
+        // Logic for FollowMouse removed
     }
 }
 
@@ -1095,10 +949,10 @@ fn rebuild_inspector(
     playground: &Playground,
 ) {
     for entity in property_rows.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
     
-    let Ok(content_entity) = content_query.single() else { return };
+    let Ok(content_entity) = content_query.get_single() else { return };
 
     // Rebuild only non-constraint pages from here; constraints page is
     // rebuilt via the main update_inspector_content which owns the queries.
@@ -1106,118 +960,9 @@ fn rebuild_inspector(
         InspectorPage::Properties => spawn_properties_page(commands, content_entity, node),
         InspectorPage::Transform => spawn_transform_page(commands, content_entity, node, playground),
         InspectorPage::Constraints => {
-            // Constraints page cannot be rebuilt from here because
-            // the constraint query is not available. It will refresh
+            // Constraints page cannot be rebuilt from here because 
+            // the constraint query is not available. It will refresh 
             // on the next selection/inspector_state change.
         }
     }
 }
-
-// ============================================================================
-// FUNCTION INPUT HANDLERS
-// ============================================================================
-
-/// Handle clicking on function input to focus it
-pub fn handle_function_input_focus(
-    mut fn_focus: ResMut<FunctionInputFocus>,
-    input_query: Query<(Entity, &Interaction, &FunctionField<InspectorFieldKind>), (Changed<Interaction>, With<FunctionInput>)>,
-    text_query: Query<(&Text, &FunctionField<InspectorFieldKind>), With<FunctionInputDisplay>>,
-) {
-    for (entity, interaction, field) in input_query.iter() {
-        if *interaction == Interaction::Pressed {
-            let mut current_value = String::new();
-            for (text, text_field) in text_query.iter() {
-                if text_field.kind == field.kind {
-                    let val = text.0.clone();
-                    if val != "f(t)" {
-                        current_value = val;
-                    }
-                    break;
-                }
-            }
-            
-            fn_focus.entity = Some(entity);
-            fn_focus.buffer = current_value;
-            fn_focus.field_kind = Some(field.kind);
-        }
-    }
-}
-
-/// Handle keyboard input for focused function expression field
-pub fn handle_function_input_keyboard(
-    mut fn_focus: ResMut<FunctionInputFocus>,
-    mut keyboard_events: MessageReader<KeyboardInput>,
-    mut text_query: Query<(&mut Text, &mut TextColor, &FunctionField<InspectorFieldKind>), With<FunctionInputDisplay>>,
-    selection: Res<Selection>,
-    mut node_query: Query<&mut SimNode>,
-) {
-    let Some(_focused_entity) = fn_focus.entity else { return };
-    let Some(field_kind) = fn_focus.field_kind else { return };
-    
-    for event in keyboard_events.read() {
-        if !event.state.is_pressed() {
-            continue;
-        }
-        
-        match &event.logical_key {
-            Key::Character(c) => {
-                fn_focus.buffer.push_str(c.as_str());
-                update_function_text(&mut text_query, field_kind, &fn_focus.buffer);
-            }
-            Key::Space => {
-                fn_focus.buffer.push(' ');
-                update_function_text(&mut text_query, field_kind, &fn_focus.buffer);
-            }
-            Key::Backspace => {
-                fn_focus.buffer.pop();
-                update_function_text(&mut text_query, field_kind, &fn_focus.buffer);
-            }
-            Key::Enter => {
-                apply_function_value(&selection, &mut node_query, field_kind, &fn_focus.buffer);
-                update_function_text(&mut text_query, field_kind, &fn_focus.buffer);
-            }
-            Key::Escape => {
-                fn_focus.entity = None;
-                fn_focus.buffer.clear();
-                fn_focus.field_kind = None;
-            }
-            _ => {}
-        }
-    }
-}
-
-fn update_function_text(
-    text_query: &mut Query<(&mut Text, &mut TextColor, &FunctionField<InspectorFieldKind>), With<FunctionInputDisplay>>,
-    field_kind: InspectorFieldKind,
-    new_text: &str,
-) {
-    for (mut text, mut color, field) in text_query.iter_mut() {
-        if field.kind == field_kind {
-            if new_text.is_empty() {
-                text.0 = "f(t)".to_string();
-                color.0 = TEXT_DISABLED;
-            } else {
-                text.0 = new_text.to_string();
-                color.0 = TEXT;
-            }
-            break;
-        }
-    }
-}
-
-fn apply_function_value(
-    selection: &Res<Selection>,
-    node_query: &mut Query<&mut SimNode>,
-    kind: InspectorFieldKind,
-    expr: &str,
-) {
-    let Some(selected_entity) = selection.entity else { return };
-    let Ok(mut node) = node_query.get_mut(selected_entity) else { return };
-    
-    match kind {
-        InspectorFieldKind::AccFnX => node.acc_fn_x = expr.to_string(),
-        InspectorFieldKind::AccFnY => node.acc_fn_y = expr.to_string(),
-        _ => {}
-    }
-}
-
