@@ -2,10 +2,12 @@
 
 pub mod components;
 pub mod constants;
+pub mod serialization;
 pub mod systems;
 
 pub use components::{DistanceConstraint, Node, NodeType, Playground};
+pub use serialization::{SceneData, build_scene_data, spawn_scene_data, export_to_file, import_from_file};
 pub use systems::{
-    constraint_solving_system, follow_mouse_system,
-    boundary_collision_system, verlet_integration_system,
+    anchor_movement_system, constraint_solving_system,
+    boundary_collision_system, save_frame_start_system, verlet_integration_system,
 };

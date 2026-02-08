@@ -2,7 +2,8 @@
 
 use bevy::prelude::*;
 
-use crate::core::Node as SimNode;
+
+use crate::core::{Node as SimNode, DistanceConstraint};
 use crate::ui::state::InputState;
 use crate::editor::constants::*;
 use crate::editor::components::{NodeVisual, Selected, Selectable};
@@ -10,7 +11,6 @@ use crate::editor::visuals::node::get_node_color;
 use super::input::{cursor_world_pos, pick_node_at};
 use crate::ui::state::{EditorTool, EditorToolState};
 
-/// Resource tracking the currently selected entity.
 #[derive(Resource, Clone, Debug, Default, Reflect)]
 pub struct Selection {
     pub entity: Option<Entity>,
@@ -30,7 +30,6 @@ impl Selection {
     }
 }
 
-/// Handles left-clicks to select nodes in the editor.
 pub fn handle_node_selection(
     mut commands: Commands,
     mut selection: ResMut<Selection>,
@@ -64,7 +63,6 @@ pub fn handle_node_selection(
     }
 }
 
-/// Updates the visual appearance of nodes based on selection state.
 pub fn update_selection_visuals(
     selection: Res<Selection>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -87,5 +85,27 @@ pub fn update_selection_visuals(
                 }
             }
         }
+    }
+}
+
+pub fn handle_delete_selected(
+    mut commands: Commands,
+    mut selection: ResMut<Selection>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+    constraints: Query<(Entity, &DistanceConstraint)>,
+) {
+    if !keyboard.just_pressed(KeyCode::Delete) {
+        return;
+    }
+
+    if let Some(entity) = selection.entity {
+        for (c_entity, constraint) in constraints.iter() {
+            if constraint.involves(entity) {
+                commands.entity(c_entity).despawn();
+            }
+        }
+
+        commands.entity(entity).despawn();
+        selection.deselect();
     }
 }

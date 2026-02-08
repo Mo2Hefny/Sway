@@ -4,7 +4,8 @@ use bevy::prelude::*;
 
 use crate::core::{Node, NodeType};
 use crate::editor::constants::*;
-use crate::editor::components::{NodeVisual, NodeVisualOf, ContactPoint, LookVector, Selectable};
+use crate::editor::components::{NodeVisual, NodeVisualOf, ContactPoint, LookVector, EyeVisual, Selectable};
+use crate::ui::state::DisplaySettings;
 use super::mesh::{create_local_line_mesh, create_hollow_circle_mesh, create_filled_circle_mesh};
 
 // Computes the look direction based on the node type and acceleration.
@@ -30,9 +31,9 @@ pub fn spawn_node_visuals(
         let look_mesh = meshes.add(create_local_line_mesh(LOOK_VECTOR_LENGTH, LOOK_VECTOR_THICKNESS));
         let look_material = materials.add(ColorMaterial::from_color(LOOK_VECTOR_COLOR));
 
-        let look = compute_look_direction(node);
-        let perp = Vec2::new(-look.y, look.x);
-        let look_angle = look.y.atan2(look.x);
+        let look_angle = node.chain_angle;
+        let right_offset = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * node.radius;
+        let left_offset = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * node.radius;
 
         commands.entity(entity).with_children(|parent| {
             parent.spawn((
@@ -43,9 +44,21 @@ pub fn spawn_node_visuals(
                 MeshMaterial2d(materials.add(ColorMaterial::from_color(color))),
             ));
 
-            spawn_contact_point(parent, contact_mesh.clone(), contact_material.clone(), perp * node.radius);
-            spawn_contact_point(parent, contact_mesh.clone(), contact_material.clone(), -perp * node.radius);
+            spawn_contact_point(parent, contact_mesh.clone(), contact_material.clone(), right_offset);
+            spawn_contact_point(parent, contact_mesh.clone(), contact_material.clone(), left_offset);
             spawn_look_vector(parent, look_mesh, look_material, look_angle);
+
+            if node.node_type == NodeType::Anchor {
+                let eye_dist = node.radius * EYE_DISTANCE_RATIO;
+                let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
+                let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+
+                let eye_mesh = meshes.add(create_filled_circle_mesh(EYE_RADIUS, CONTACT_SEGMENTS));
+                let eye_mat = materials.add(ColorMaterial::from_color(EYE_COLOR));
+
+                spawn_eye(parent, eye_mesh.clone(), eye_mat.clone(), r_eye, 1.0);
+                spawn_eye(parent, eye_mesh, eye_mat, l_eye, 1.0);
+            }
         });
 
         commands.entity(entity).insert((
@@ -55,49 +68,101 @@ pub fn spawn_node_visuals(
     }
 }
 
-/// Syncs `Node` position, radius, type changes, contact points, and look vector.
 pub fn sync_node_visuals(
     mut meshes: ResMut<Assets<Mesh>>,
     mut node_query: Query<(&Node, &mut Transform, &Children), Changed<Node>>,
     mut visual_query: Query<&mut Mesh2d, With<NodeVisual>>,
-    mut contact_query: Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>)>,
+    mut contact_query: Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>, Without<EyeVisual>)>,
     contact_children: Query<Entity, With<ContactPoint>>,
-    mut look_query: Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>)>,
+    mut look_query: Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>, Without<EyeVisual>)>,
     look_children: Query<Entity, With<LookVector>>,
+    mut eye_query: Query<&mut Transform, (With<EyeVisual>, Without<Node>, Without<ContactPoint>, Without<LookVector>)>,
+    eye_children: Query<Entity, With<EyeVisual>>,
 ) {
     for (node, mut transform, children) in node_query.iter_mut() {
         transform.translation.x = node.position.x;
         transform.translation.y = node.position.y;
 
-        let look = compute_look_direction(node);
-        let perp = Vec2::new(-look.y, look.x);
-        let look_angle = look.y.atan2(look.x);
+        let look_angle = node.chain_angle;
+        let right_offset = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * node.radius;
+        let left_offset = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * node.radius;
 
         for child in children.iter() {
             sync_circle_mesh(child, node.radius, &mut meshes, &mut visual_query);
             sync_look_rotation(child, look_angle, &look_children, &mut look_query);
         }
 
-        let offsets = [perp * node.radius, -perp * node.radius];
+        let offsets = [right_offset, left_offset];
         sync_contact_positions(children, &offsets, &contact_children, &mut contact_query);
+
+        if node.node_type == NodeType::Anchor {
+            let eye_dist = node.radius * EYE_DISTANCE_RATIO;
+            let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
+            let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+            let eye_offsets = [r_eye, l_eye];
+            sync_eye_positions(children, &eye_offsets, &eye_children, &mut eye_query);
+        }
+    }
+}
+
+pub fn update_node_visibility(
+    display_settings: Res<DisplaySettings>,
+    mut node_visuals: Query<&mut Visibility, With<NodeVisual>>,
+) {
+    if !display_settings.is_changed() {
+        return;
+    }
+    let vis = if display_settings.show_nodes {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    for mut v in node_visuals.iter_mut() {
+        *v = vis;
+    }
+}
+
+pub fn update_debug_visibility(
+    display_settings: Res<DisplaySettings>,
+    mut contacts: Query<&mut Visibility, (With<ContactPoint>, Without<LookVector>, Without<EyeVisual>)>,
+    mut looks: Query<&mut Visibility, (With<LookVector>, Without<ContactPoint>, Without<EyeVisual>)>,
+) {
+    if !display_settings.is_changed() {
+        return;
+    }
+    let vis = if display_settings.show_debug {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    for mut v in contacts.iter_mut() {
+        *v = vis;
+    }
+    for mut v in looks.iter_mut() {
+        *v = vis;
+    }
+}
+
+pub fn update_eye_visibility(
+    display_settings: Res<DisplaySettings>,
+    mut eyes: Query<&mut Visibility, With<EyeVisual>>,
+) {
+    if !display_settings.is_changed() {
+        return;
+    }
+    let vis = if display_settings.show_skin {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    for mut v in eyes.iter_mut() {
+        *v = vis;
     }
 }
 
 // =============================================================================
 // Private Methods
 // =============================================================================
-
-/// Computes the forward look direction for a node.
-fn compute_look_direction(node: &Node) -> Vec2 {
-    let velocity = node.position - node.prev_position;
-    if velocity.length_squared() > 1e-6 {
-        return velocity.normalize();
-    }
-    if node.acceleration.length_squared() > 1e-6 {
-        return node.acceleration.normalize();
-    }
-    Vec2::X
-}
 
 fn get_contact_color(node_type: NodeType) -> Color {
     if node_type == NodeType::Anchor { ANCHOR_CONTACT_COLOR } else { CONTACT_COLOR }
@@ -134,7 +199,6 @@ fn spawn_look_vector(
     ));
 }
 
-/// Updates circle mesh for the node visual child.
 fn sync_circle_mesh(
     child: Entity,
     radius: f32,
@@ -146,12 +210,11 @@ fn sync_circle_mesh(
     }
 }
 
-/// Updates the look vector child rotation.
 fn sync_look_rotation(
     child: Entity,
     angle: f32,
     look_children: &Query<Entity, With<LookVector>>,
-    look_query: &mut Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>)>,
+    look_query: &mut Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>, Without<EyeVisual>)>,
 ) {
     if look_children.get(child).is_ok() {
         if let Ok(mut lt) = look_query.get_mut(child) {
@@ -160,12 +223,47 @@ fn sync_look_rotation(
     }
 }
 
-/// Updates contact point positions perpendicular to the look direction.
+fn spawn_eye(
+    parent: &mut ChildSpawnerCommands,
+    mesh: Handle<Mesh>,
+    material: Handle<ColorMaterial>,
+    offset: Vec2,
+    z: f32,
+) {
+    parent.spawn((
+        Name::new("Eye"),
+        EyeVisual,
+        Mesh2d(mesh),
+        MeshMaterial2d(material),
+        Transform::from_translation(offset.extend(z)),
+    ));
+}
+
+fn sync_eye_positions(
+    children: &Children,
+    offsets: &[Vec2],
+    eye_children: &Query<Entity, With<EyeVisual>>,
+    eye_query: &mut Query<&mut Transform, (With<EyeVisual>, Without<Node>, Without<ContactPoint>, Without<LookVector>)>,
+) {
+    let mut idx = 0;
+    for child in children.iter() {
+        if eye_children.get(child).is_ok() {
+            if let Ok(mut et) = eye_query.get_mut(child) {
+                if idx < offsets.len() {
+                    et.translation.x = offsets[idx].x;
+                    et.translation.y = offsets[idx].y;
+                    idx += 1;
+                }
+            }
+        }
+    }
+}
+
 fn sync_contact_positions(
     children: &Children,
     offsets: &[Vec2],
     contact_children: &Query<Entity, With<ContactPoint>>,
-    contact_query: &mut Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>)>,
+    contact_query: &mut Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>, Without<EyeVisual>)>,
 ) {
     let mut idx = 0;
     for child in children.iter() {

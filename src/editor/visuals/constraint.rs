@@ -6,6 +6,7 @@ use crate::editor::constants::*;
 use crate::editor::components::{ConstraintVisual, ConstraintVisualOf};
 use super::mesh::create_line_mesh;
 use crate::core::{DistanceConstraint, Node};
+use crate::ui::state::DisplaySettings;
 
 pub fn spawn_constraint_visuals(
     mut commands: Commands,
@@ -49,6 +50,7 @@ pub fn sync_constraint_visuals(
             commands.entity(vis_entity).despawn();
             continue;
         };
+
         let Ok(node_b) = nodes.get(constraint.node_b) else {
             commands.entity(vis_entity).despawn();
             continue;
@@ -61,11 +63,29 @@ pub fn sync_constraint_visuals(
     }
 }
 
+pub fn update_edge_visibility(
+    display_settings: Res<DisplaySettings>,
+    mut visuals: Query<&mut Visibility, With<ConstraintVisual>>,
+) {
+    if !display_settings.is_changed() {
+        return;
+    }
+
+    let vis = if display_settings.show_edge {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+
+    for mut v in visuals.iter_mut() {
+        *v = vis;
+    }
+}
+
 // =============================================================================
 // Private Methods
 // =============================================================================
 
-// Computes the endpoints of the constraint line, offset from the node centers by their radii.
 fn edge_endpoints(a: &Node, b: &Node) -> (Vec2, Vec2) {
     let dir = b.position - a.position;
     let dist = dir.length();

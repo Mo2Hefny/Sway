@@ -22,6 +22,10 @@ pub struct ContactPoint;
 #[derive(Component, Clone, Debug, Reflect)]
 pub struct LookVector;
 
+/// Marker for eye visuals on anchor/head nodes.
+#[derive(Component, Clone, Debug, Reflect)]
+pub struct EyeVisual;
+
 // =============================================================================
 // Selection Components
 // =============================================================================
@@ -65,3 +69,15 @@ pub struct PlaygroundBorder;
 /// Marker for the inside fill of the playground.
 #[derive(Component, Debug)]
 pub struct PlaygroundFill;
+
+// =============================================================================
+// Skin Visual Components
+// =============================================================================
+
+/// Marker for the skin mesh entity that renders the body outline.
+#[derive(Component, Debug)]
+pub struct SkinMesh;
+
+/// Marker for the skin outline stroke.
+#[derive(Component, Debug)]
+pub struct SkinOutline;

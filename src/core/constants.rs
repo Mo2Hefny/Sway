@@ -21,3 +21,9 @@ pub const FOLLOW_SPEED: f32 = 5.0;
 pub const MIN_CONSTRAINT_DISTANCE: f32 = 10.0;
 pub const MAX_CONSTRAINT_DISTANCE: f32 = 200.0;
 pub const CONSTRAINT_ITERATIONS: usize = 4;
+
+// =============================================================================
+// Angle Constraint Constants
+// =============================================================================
+
+pub const ANGLE_CONSTRAINT: f32 = std::f32::consts::FRAC_PI_8;
