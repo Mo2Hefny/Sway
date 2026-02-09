@@ -34,7 +34,7 @@ pub fn get_constraint_neighbor(current: Entity, a: Entity, b: Entity) -> Option<
 pub fn normalize_angle(angle: f32) -> f32 {
     let two_pi = std::f32::consts::TAU;
     let normalized = angle % two_pi;
-    
+
     if normalized > std::f32::consts::PI {
         normalized - two_pi
     } else if normalized < -std::f32::consts::PI {

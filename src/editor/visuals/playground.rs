@@ -2,16 +2,13 @@
 
 use bevy::prelude::*;
 
+use super::mesh::{create_hollow_rect_mesh, create_quad_mesh};
 use crate::core::Playground;
+use crate::editor::components::{PlaygroundBorder, PlaygroundFill, PlaygroundOutside};
 use crate::editor::constants::*;
-use crate::editor::components::{PlaygroundOutside, PlaygroundBorder, PlaygroundFill};
-use super::mesh::{create_quad_mesh, create_hollow_rect_mesh};
 
 /// Syncs `Playground.half_size` to match the window dimensions in world space.
-pub fn sync_playground_to_window(
-    mut playground: ResMut<Playground>,
-    windows: Query<&Window>,
-) {
+pub fn sync_playground_to_window(mut playground: ResMut<Playground>, windows: Query<&Window>) {
     let Ok(window) = windows.single() else { return };
     let new_half = Vec2::new(window.width() * 0.5, window.height() * 0.5);
 
@@ -85,7 +82,14 @@ pub fn sync_playground_visual(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     outside_query: Query<(&Mesh2d, &MeshMaterial2d<ColorMaterial>), With<PlaygroundOutside>>,
-    border_query: Query<(&Mesh2d, &MeshMaterial2d<ColorMaterial>), (With<PlaygroundBorder>, Without<PlaygroundOutside>, Without<PlaygroundFill>)>,
+    border_query: Query<
+        (&Mesh2d, &MeshMaterial2d<ColorMaterial>),
+        (
+            With<PlaygroundBorder>,
+            Without<PlaygroundOutside>,
+            Without<PlaygroundFill>,
+        ),
+    >,
     fill_query: Query<(&Mesh2d, &MeshMaterial2d<ColorMaterial>), With<PlaygroundFill>>,
 ) {
     if !playground.is_changed() {
@@ -99,20 +103,35 @@ pub fn sync_playground_visual(
     let inner_max = playground.inner_max();
 
     for (mh, mat) in outside_query.iter() {
-        update_layer(&mut meshes, &mut materials, mh, mat,
+        update_layer(
+            &mut meshes,
+            &mut materials,
+            mh,
+            mat,
             create_hollow_rect_mesh(-hs, hs, stroke_outer_min, stroke_outer_max),
-            PLAYGROUND_OUTSIDE_COLOR);
+            PLAYGROUND_OUTSIDE_COLOR,
+        );
     }
 
     for (mh, mat) in border_query.iter() {
-        update_layer(&mut meshes, &mut materials, mh, mat,
+        update_layer(
+            &mut meshes,
+            &mut materials,
+            mh,
+            mat,
             create_hollow_rect_mesh(stroke_outer_min, stroke_outer_max, inner_min, inner_max),
-            PLAYGROUND_BORDER_COLOR);
+            PLAYGROUND_BORDER_COLOR,
+        );
     }
 
     for (mh, mat) in fill_query.iter() {
-        update_layer(&mut meshes, &mut materials, mh, mat,
+        update_layer(
+            &mut meshes,
+            &mut materials,
+            mh,
+            mat,
             create_quad_mesh(inner_min, inner_max),
-            PLAYGROUND_FILL_COLOR);
+            PLAYGROUND_FILL_COLOR,
+        );
     }
 }

@@ -1,9 +1,9 @@
 //! UI marker components for layout and panel elements.
 
-use bevy::prelude::*;
 use bevy::picking::prelude::Pickable;
+use bevy::prelude::*;
 
-use crate::ui::state::{InspectorPage, EditorTool};
+use crate::ui::state::{EditorTool, InspectorPage};
 
 // ============================================================================
 // PANEL MARKERS

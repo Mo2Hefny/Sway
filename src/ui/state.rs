@@ -149,10 +149,7 @@ impl InputState {
     }
 }
 
-pub fn update_input_state(
-    mut input_state: ResMut<InputState>,
-    ui_interaction: Query<&Interaction>,
-) {
+pub fn update_input_state(mut input_state: ResMut<InputState>, ui_interaction: Query<&Interaction>) {
     input_state.cursor_over_ui = ui_interaction
         .iter()
         .any(|interaction| *interaction != Interaction::None);

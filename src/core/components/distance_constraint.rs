@@ -34,7 +34,7 @@ impl DistanceConstraint {
             None
         }
     }
-    
+
     fn clamp_rest_length(length: f32) -> f32 {
         length.clamp(MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE)
     }

@@ -2,10 +2,10 @@
 
 use bevy::prelude::*;
 
-use crate::core::{Node as SimNode, NodeType};
-use crate::ui::state::InputState;
-use crate::editor::constants::*;
 use super::input::cursor_world_pos;
+use crate::core::{Node as SimNode, NodeType};
+use crate::editor::constants::*;
+use crate::ui::state::InputState;
 use crate::ui::state::{EditorTool, EditorToolState};
 
 /// Handles left-clicks to add new nodes to the simulation.
@@ -24,7 +24,9 @@ pub fn handle_add_node_tool(
         return;
     }
 
-    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
+        return;
+    };
 
     commands.spawn((
         Name::new("Node"),

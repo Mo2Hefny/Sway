@@ -3,9 +3,9 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
 
-use crate::core::constants::*;
 use crate::core::components::{DistanceConstraint, Node, NodeType};
-use crate::core::utils::{normalize_angle_to_positive};
+use crate::core::constants::*;
+use crate::core::utils::normalize_angle_to_positive;
 use crate::ui::state::PlaybackState;
 
 pub fn constraint_solving_system(
@@ -80,9 +80,7 @@ fn build_chains(
     (chains, standalone)
 }
 
-fn build_adjacency_list(
-    constraints: &[&DistanceConstraint],
-) -> HashMap<Entity, Vec<(Entity, f32)>> {
+fn build_adjacency_list(constraints: &[&DistanceConstraint]) -> HashMap<Entity, Vec<(Entity, f32)>> {
     let mut adj: HashMap<Entity, Vec<(Entity, f32)>> = HashMap::new();
     for c in constraints {
         adj.entry(c.node_a).or_default().push((c.node_b, c.rest_length));
@@ -91,10 +89,7 @@ fn build_adjacency_list(
     adj
 }
 
-fn find_chain_starts(
-    adj: &HashMap<Entity, Vec<(Entity, f32)>>,
-    nodes: &Query<&mut Node>,
-) -> Vec<Entity> {
+fn find_chain_starts(adj: &HashMap<Entity, Vec<(Entity, f32)>>, nodes: &Query<&mut Node>) -> Vec<Entity> {
     let mut starts: Vec<Entity> = Vec::new();
     let mut non_anchor_leaves: Vec<Entity> = Vec::new();
 
@@ -265,13 +260,7 @@ fn resolve_chain(chain: &[ChainLink], nodes: &mut Query<&mut Node>) {
     set_root_chain_angle(chain[0].entity, prev_angle, nodes);
 
     for i in 1..chain.len() {
-        let result = resolve_chain_link(
-            &chain[i],
-            &chain[i - 1],
-            prev_pos,
-            prev_angle,
-            nodes,
-        );
+        let result = resolve_chain_link(&chain[i], &chain[i - 1], prev_pos, prev_angle, nodes);
 
         if let Some((new_angle, new_pos)) = result {
             prev_angle = new_angle;
@@ -280,10 +269,7 @@ fn resolve_chain(chain: &[ChainLink], nodes: &mut Query<&mut Node>) {
     }
 }
 
-fn initialize_chain_resolution(
-    chain: &[ChainLink],
-    nodes: &Query<&mut Node>,
-) -> Option<(f32, Vec2)> {
+fn initialize_chain_resolution(chain: &[ChainLink], nodes: &Query<&mut Node>) -> Option<(f32, Vec2)> {
     let first_pos = nodes.get(chain[0].entity).ok()?.position;
     let second_pos = nodes.get(chain[1].entity).ok()?.position;
     let initial_angle = (second_pos - first_pos).to_angle();
@@ -375,8 +361,6 @@ fn relative_angle_diff(angle: f32, anchor: f32) -> f32 {
     let shifted = normalize_angle_to_positive(angle + std::f32::consts::PI - anchor);
     std::f32::consts::PI - shifted
 }
-
-
 
 fn solve_distance(constraint: &DistanceConstraint, nodes: &mut Query<&mut Node>) {
     let (pos_a, pos_b, type_a, type_b) = match extract_constraint_positions(constraint, nodes) {

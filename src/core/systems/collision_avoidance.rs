@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::core::components::{Node, NodeType, AnchorMovementMode, DistanceConstraint, Playground};
+use crate::core::components::{AnchorMovementMode, DistanceConstraint, Node, NodeType, Playground};
 use crate::core::constants::MIN_COLLISION_DISTANCE;
 use crate::core::utils::{find_connected_entities, get_constraint_neighbor};
 use crate::ui::state::PlaybackState;
@@ -18,10 +18,7 @@ pub fn collision_avoidance_system(
     let inner_min = playground.inner_min();
     let inner_max = playground.inner_max();
 
-    let constraints: Vec<(Entity, Entity)> = constraint_query
-        .iter()
-        .map(|c| (c.node_a, c.node_b))
-        .collect();
+    let constraints: Vec<(Entity, Entity)> = constraint_query.iter().map(|c| (c.node_a, c.node_b)).collect();
 
     let node_data: Vec<(Entity, Vec2, f32, f32)> = nodes
         .iter()
@@ -30,9 +27,9 @@ pub fn collision_avoidance_system(
 
     for (entity, mut node) in nodes.iter_mut() {
         let is_procedural_anchor = is_procedural_anchor_node(&node);
-        
+
         apply_boundary_collision(&mut node, inner_min, inner_max, is_procedural_anchor);
-        
+
         if is_procedural_anchor {
             apply_node_collision(entity, &mut node, &node_data, &constraints);
         }
@@ -47,12 +44,7 @@ fn is_procedural_anchor_node(node: &Node) -> bool {
     node.node_type == NodeType::Anchor && node.movement_mode == AnchorMovementMode::Procedural
 }
 
-fn apply_boundary_collision(
-    node: &mut Node,
-    inner_min: Vec2,
-    inner_max: Vec2,
-    is_procedural_anchor: bool,
-) {
+fn apply_boundary_collision(node: &mut Node, inner_min: Vec2, inner_max: Vec2, is_procedural_anchor: bool) {
     let r = node.radius;
     let mut hit_boundary = false;
 

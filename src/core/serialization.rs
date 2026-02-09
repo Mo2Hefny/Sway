@@ -89,11 +89,7 @@ fn spawn_nodes(commands: &mut Commands, scene: &SceneData) -> Vec<Entity> {
     scene
         .nodes
         .iter()
-        .map(|node| {
-            commands
-                .spawn((Name::new("Node"), node.clone()))
-                .id()
-        })
+        .map(|node| commands.spawn((Name::new("Node"), node.clone())).id())
         .collect()
 }
 
@@ -116,9 +112,7 @@ fn request_save_path() -> Option<std::path::PathBuf> {
 }
 
 fn request_load_path() -> Option<std::path::PathBuf> {
-    rfd::FileDialog::new()
-        .add_filter("Sway Scene", &["json"])
-        .pick_file()
+    rfd::FileDialog::new().add_filter("Sway Scene", &["json"]).pick_file()
 }
 
 fn serialize_scene(scene: &SceneData) -> Result<String, serde_json::Error> {

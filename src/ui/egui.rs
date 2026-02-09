@@ -1,16 +1,14 @@
 //! Editor UI implemented with bevy_egui, preserving the original layout.
 
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts, EguiTextureHandle};
+use bevy_egui::{EguiContexts, EguiTextureHandle, egui};
 
-
+use crate::core::constants::{MAX_CONSTRAINT_DISTANCE, MIN_CONSTRAINT_DISTANCE};
 use crate::core::{
-    Node as SimNode, NodeType, DistanceConstraint, Playground,
-    AnchorMovementMode, ProceduralPathType,
-    build_scene_data, spawn_scene_data, export_to_file, import_from_file,
+    AnchorMovementMode, DistanceConstraint, Node as SimNode, NodeType, Playground, ProceduralPathType,
+    build_scene_data, export_to_file, import_from_file, spawn_scene_data,
 };
-use crate::core::constants::{MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE};
-use crate::editor::components::{NodeVisual, ConstraintVisual, ConstraintPreview};
+use crate::editor::components::{ConstraintPreview, ConstraintVisual, NodeVisual};
 use crate::editor::tools::selection::Selection;
 use crate::ui::icons::UiIcons;
 use crate::ui::messages::*;
@@ -28,7 +26,6 @@ pub struct PendingConstraintActions {
     pub deletes: Vec<Entity>,
     pub node_deletes: Vec<Entity>,
 }
-
 
 /// Cached egui texture IDs for UI icons (registered on first use).
 #[derive(Resource, Default)]
@@ -51,11 +48,7 @@ pub struct EguiIconTextures {
     checkmark: Option<egui::TextureId>,
 }
 
-fn ensure_icons_registered(
-    contexts: &mut EguiContexts,
-    icons: &UiIcons,
-    egui_icons: &mut EguiIconTextures,
-) {
+fn ensure_icons_registered(contexts: &mut EguiContexts, icons: &UiIcons, egui_icons: &mut EguiIconTextures) {
     if egui_icons.hamburger.is_some() {
         return;
     }
@@ -147,8 +140,11 @@ pub fn editor_ui_system(
                 let hamburger_btn = if let Some(tid) = icons.hamburger {
                     ui.add_sized(
                         egui::vec2(32.0, 32.0),
-                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(18.0, 18.0))))
-                            .fill(surface),
+                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                            tid,
+                            egui::vec2(18.0, 18.0),
+                        )))
+                        .fill(surface),
                     )
                 } else {
                     ui.add_sized(egui::vec2(32.0, 32.0), egui::Button::new("≡").fill(surface))
@@ -194,12 +190,12 @@ pub fn editor_ui_system(
     let icon_bar_w = 48.0;
     let inspector_w = 280.0;
     let tool_bar_w = 48.0;
-    let panel_height = bottom - top;  // Full screen height
+    let panel_height = bottom - top; // Full screen height
 
     // Calculate LEFT EDGE X positions for each panel (from right edge of screen)
     // Icon bar: at the far right
     let icon_bar_x = right - icon_bar_w;
-    // Inspector panel: to the left of icon bar  
+    // Inspector panel: to the left of icon bar
     let inspector_x = icon_bar_x - inspector_w;
     // Toolbar: to the left of inspector panel (or icon bar when inspector closed)
     let tool_bar_x = if inspector_state.open {
@@ -229,12 +225,19 @@ pub fn editor_ui_system(
                         (EditorTool::Move, icons.move_tool),
                     ] {
                         let active = tool_state.active == tool;
-                        let fill = if active { to_egui_color(SURFACE_HOVER) } else { to_egui_color(SURFACE) };
+                        let fill = if active {
+                            to_egui_color(SURFACE_HOVER)
+                        } else {
+                            to_egui_color(SURFACE)
+                        };
                         let tool_btn = match icon {
                             Some(tid) => ui.add_sized(
                                 egui::vec2(40.0, 40.0),
-                                egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(24.0, 24.0))))
-                                    .fill(fill),
+                                egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                    tid,
+                                    egui::vec2(24.0, 24.0),
+                                )))
+                                .fill(fill),
                             ),
                             None => ui.add_sized(egui::vec2(40.0, 40.0), egui::Button::new(tool.name()).fill(fill)),
                         };
@@ -295,22 +298,40 @@ pub fn editor_ui_system(
                 frame.show(ui, |ui| {
                     ui.set_min_size(egui::vec2(icon_bar_w - 8.0, panel_height - 8.0));
                     ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 4.0);
-                    let caret_id = if inspector_state.open { icons.caret_right } else { icons.caret_left };
+                    let caret_id = if inspector_state.open {
+                        icons.caret_right
+                    } else {
+                        icons.caret_left
+                    };
                     let caret_btn = match caret_id {
                         Some(tid) => ui.add_sized(
                             egui::vec2(40.0, 40.0),
-                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(24.0, 24.0))))
-                                .fill(to_egui_color(SURFACE)),
+                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                tid,
+                                egui::vec2(24.0, 24.0),
+                            )))
+                            .fill(to_egui_color(SURFACE)),
                         ),
-                        None => ui.add_sized(egui::vec2(40.0, 40.0), egui::Button::new("◀").fill(to_egui_color(SURFACE))),
+                        None => ui.add_sized(
+                            egui::vec2(40.0, 40.0),
+                            egui::Button::new("◀").fill(to_egui_color(SURFACE)),
+                        ),
                     };
                     if caret_btn.clicked() {
                         inspector_state.open = !inspector_state.open;
                     }
                     ui.separator();
-                    for page in [InspectorPage::Properties, InspectorPage::Transform, InspectorPage::Constraints] {
+                    for page in [
+                        InspectorPage::Properties,
+                        InspectorPage::Transform,
+                        InspectorPage::Constraints,
+                    ] {
                         let active = inspector_state.active_page == page;
-                        let fill = if active { to_egui_color(SURFACE_HOVER) } else { to_egui_color(SURFACE) };
+                        let fill = if active {
+                            to_egui_color(SURFACE_HOVER)
+                        } else {
+                            to_egui_color(SURFACE)
+                        };
                         let icon = match page {
                             InspectorPage::Properties => icons.properties,
                             InspectorPage::Transform => icons.transform,
@@ -319,8 +340,11 @@ pub fn editor_ui_system(
                         let page_btn = match icon {
                             Some(tid) => ui.add_sized(
                                 egui::vec2(40.0, 40.0),
-                                egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(24.0, 24.0))))
-                                    .fill(fill),
+                                egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                    tid,
+                                    egui::vec2(24.0, 24.0),
+                                )))
+                                .fill(fill),
                             ),
                             None => ui.add_sized(egui::vec2(40.0, 40.0), egui::Button::new("").fill(fill)),
                         };
@@ -345,39 +369,57 @@ pub fn editor_ui_system(
             frame.show(ui, |ui| {
                 ui.style_mut().spacing.item_spacing = egui::vec2(6.0, 6.0);
                 ui.horizontal(|ui| {
-                let play_btn = match icons.play {
-                    Some(tid) => ui.add_sized(
-                        egui::vec2(32.0, 32.0),
-                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(16.0, 16.0))))
+                    let play_btn = match icons.play {
+                        Some(tid) => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                tid,
+                                egui::vec2(16.0, 16.0),
+                            )))
                             .fill(to_egui_color(SURFACE)),
-                    ),
-                    None => ui.add_sized(egui::vec2(32.0, 32.0), egui::Button::new("▶").fill(to_egui_color(SURFACE))),
-                };
-                if play_btn.clicked() {
-                    playback.play();
-                }
-                let pause_btn = match icons.pause {
-                    Some(tid) => ui.add_sized(
-                        egui::vec2(32.0, 32.0),
-                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(16.0, 16.0))))
+                        ),
+                        None => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new("▶").fill(to_egui_color(SURFACE)),
+                        ),
+                    };
+                    if play_btn.clicked() {
+                        playback.play();
+                    }
+                    let pause_btn = match icons.pause {
+                        Some(tid) => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                tid,
+                                egui::vec2(16.0, 16.0),
+                            )))
                             .fill(to_egui_color(SURFACE)),
-                    ),
-                    None => ui.add_sized(egui::vec2(32.0, 32.0), egui::Button::new("⏸").fill(to_egui_color(SURFACE))),
-                };
-                if pause_btn.clicked() {
-                    playback.pause();
-                }
-                let stop_btn = match icons.stop {
-                    Some(tid) => ui.add_sized(
-                        egui::vec2(32.0, 32.0),
-                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(tid, egui::vec2(16.0, 16.0))))
+                        ),
+                        None => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new("⏸").fill(to_egui_color(SURFACE)),
+                        ),
+                    };
+                    if pause_btn.clicked() {
+                        playback.pause();
+                    }
+                    let stop_btn = match icons.stop {
+                        Some(tid) => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                tid,
+                                egui::vec2(16.0, 16.0),
+                            )))
                             .fill(to_egui_color(SURFACE)),
-                    ),
-                    None => ui.add_sized(egui::vec2(32.0, 32.0), egui::Button::new("⏹").fill(to_egui_color(SURFACE))),
-                };
-                if stop_btn.clicked() {
-                    playback.stop();
-                }
+                        ),
+                        None => ui.add_sized(
+                            egui::vec2(32.0, 32.0),
+                            egui::Button::new("⏹").fill(to_egui_color(SURFACE)),
+                        ),
+                    };
+                    if stop_btn.clicked() {
+                        playback.stop();
+                    }
                 });
             });
         });
@@ -402,10 +444,7 @@ pub fn editor_ui_system(
 }
 
 /// Toggle UI visibility with H key. Runs in Update so editor_ui_system can stay in EguiPrimaryContextPass.
-pub fn toggle_ui_visibility(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut ui_visibility: ResMut<UiVisibility>,
-) {
+pub fn toggle_ui_visibility(keyboard: Res<ButtonInput<KeyCode>>, mut ui_visibility: ResMut<UiVisibility>) {
     if keyboard.just_pressed(KeyCode::KeyH) {
         ui_visibility.visible = !ui_visibility.visible;
     }
@@ -500,13 +539,22 @@ fn inspector_content_ui(
                     egui::ComboBox::from_id_salt("node_type")
                         .selected_text(node.node_type.name())
                         .show_ui(ui, |ui| {
-                            if ui.selectable_label(node.node_type == NodeType::Normal, NodeType::Normal.name()).clicked() {
+                            if ui
+                                .selectable_label(node.node_type == NodeType::Normal, NodeType::Normal.name())
+                                .clicked()
+                            {
                                 node.node_type = NodeType::Normal;
                             }
-                            if ui.selectable_label(node.node_type == NodeType::Anchor, NodeType::Anchor.name()).clicked() {
+                            if ui
+                                .selectable_label(node.node_type == NodeType::Anchor, NodeType::Anchor.name())
+                                .clicked()
+                            {
                                 node.node_type = NodeType::Anchor;
                             }
-                            if ui.selectable_label(node.node_type == NodeType::Leg, NodeType::Leg.name()).clicked() {
+                            if ui
+                                .selectable_label(node.node_type == NodeType::Leg, NodeType::Leg.name())
+                                .clicked()
+                            {
                                 node.node_type = NodeType::Leg;
                             }
                         });
@@ -525,20 +573,38 @@ fn inspector_content_ui(
                     ui.add_space(8.0);
                     ui.separator();
                     ui.add_space(8.0);
-                    
+
                     // Movement Mode selector
                     ui.horizontal(|ui| {
                         ui.label("Movement Mode");
                         egui::ComboBox::from_id_salt("movement_mode")
                             .selected_text(node.movement_mode.name())
                             .show_ui(ui, |ui| {
-                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::None, AnchorMovementMode::None.name()).clicked() {
+                                if ui
+                                    .selectable_label(
+                                        node.movement_mode == AnchorMovementMode::None,
+                                        AnchorMovementMode::None.name(),
+                                    )
+                                    .clicked()
+                                {
                                     node.movement_mode = AnchorMovementMode::None;
                                 }
-                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::FollowTarget, AnchorMovementMode::FollowTarget.name()).clicked() {
+                                if ui
+                                    .selectable_label(
+                                        node.movement_mode == AnchorMovementMode::FollowTarget,
+                                        AnchorMovementMode::FollowTarget.name(),
+                                    )
+                                    .clicked()
+                                {
                                     node.movement_mode = AnchorMovementMode::FollowTarget;
                                 }
-                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::Procedural, AnchorMovementMode::Procedural.name()).clicked() {
+                                if ui
+                                    .selectable_label(
+                                        node.movement_mode == AnchorMovementMode::Procedural,
+                                        AnchorMovementMode::Procedural.name(),
+                                    )
+                                    .clicked()
+                                {
                                     node.movement_mode = AnchorMovementMode::Procedural;
                                     // Initialize path center to current position when switching to procedural
                                     if node.path_center == bevy::math::Vec2::ZERO {
@@ -547,7 +613,7 @@ fn inspector_content_ui(
                                 }
                             });
                     });
-                    
+
                     match node.movement_mode {
                         AnchorMovementMode::None => {
                             // Static anchor - no additional controls
@@ -569,33 +635,42 @@ fn inspector_content_ui(
                                         ProceduralPathType::Wander => "Wander",
                                     })
                                     .show_ui(ui, |ui| {
-                                        if ui.selectable_label(node.path_type == ProceduralPathType::Circle, "Circle").clicked() {
+                                        if ui
+                                            .selectable_label(node.path_type == ProceduralPathType::Circle, "Circle")
+                                            .clicked()
+                                        {
                                             node.path_type = ProceduralPathType::Circle;
                                         }
-                                        if ui.selectable_label(node.path_type == ProceduralPathType::Wave, "Wave").clicked() {
+                                        if ui
+                                            .selectable_label(node.path_type == ProceduralPathType::Wave, "Wave")
+                                            .clicked()
+                                        {
                                             node.path_type = ProceduralPathType::Wave;
                                         }
-                                        if ui.selectable_label(node.path_type == ProceduralPathType::Wander, "Wander").clicked() {
+                                        if ui
+                                            .selectable_label(node.path_type == ProceduralPathType::Wander, "Wander")
+                                            .clicked()
+                                        {
                                             node.path_type = ProceduralPathType::Wander;
                                         }
                                     });
                             });
-                            
+
                             ui.horizontal(|ui| {
                                 ui.label("Amplitude X");
                                 ui.add(egui::Slider::new(&mut node.path_amplitude.x, 10.0..=200.0));
                             });
-                            
+
                             ui.horizontal(|ui| {
                                 ui.label("Amplitude Y");
                                 ui.add(egui::Slider::new(&mut node.path_amplitude.y, 10.0..=200.0));
                             });
-                            
+
                             ui.horizontal(|ui| {
                                 ui.label("Movement Speed");
                                 ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
                             });
-                            
+
                             if ui.button("Set Center to Current Position").clicked() {
                                 node.path_center = node.position;
                             }
@@ -610,8 +685,10 @@ fn inspector_content_ui(
 
             let delete_btn = ui.add_sized(
                 [ui.available_width(), 32.0],
-                egui::Button::new(egui::RichText::new("Delete Node").color(to_egui_color(Color::srgba(1.0, 0.4, 0.4, 1.0))))
-                    .fill(to_egui_color(Color::srgba(0.8, 0.2, 0.2, 0.1))),
+                egui::Button::new(
+                    egui::RichText::new("Delete Node").color(to_egui_color(Color::srgba(1.0, 0.4, 0.4, 1.0))),
+                )
+                .fill(to_egui_color(Color::srgba(0.8, 0.2, 0.2, 0.1))),
             );
             if delete_btn.clicked() {
                 node_deletes.push(selected_entity);
@@ -628,8 +705,12 @@ fn inspector_content_ui(
                 ui.horizontal(|ui| {
                     ui.label("Position");
                     let mut pos = node.position;
-                    let changed_x = ui.add(egui::DragValue::new(&mut pos.x).range(pos_min_x..=pos_max_x)).changed();
-                    let changed_y = ui.add(egui::DragValue::new(&mut pos.y).range(pos_min_y..=pos_max_y)).changed();
+                    let changed_x = ui
+                        .add(egui::DragValue::new(&mut pos.x).range(pos_min_x..=pos_max_x))
+                        .changed();
+                    let changed_y = ui
+                        .add(egui::DragValue::new(&mut pos.y).range(pos_min_y..=pos_max_y))
+                        .changed();
                     if changed_x || changed_y {
                         node.position = pos;
                     }
@@ -677,7 +758,13 @@ fn inspector_content_ui(
                             }
                             ui.label(&label);
                             let mut len = constraint.rest_length;
-                            if ui.add(egui::DragValue::new(&mut len).range(MIN_CONSTRAINT_DISTANCE..=MAX_CONSTRAINT_DISTANCE)).changed() {
+                            if ui
+                                .add(
+                                    egui::DragValue::new(&mut len)
+                                        .range(MIN_CONSTRAINT_DISTANCE..=MAX_CONSTRAINT_DISTANCE),
+                                )
+                                .changed()
+                            {
                                 constraint_updates.push((*constraint_entity, len));
                             }
                         });

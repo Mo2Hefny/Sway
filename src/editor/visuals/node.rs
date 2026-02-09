@@ -2,11 +2,13 @@
 
 use bevy::prelude::*;
 
+use super::mesh::{create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
 use crate::core::{Node, NodeType};
+use crate::editor::components::{
+    ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
+};
 use crate::editor::constants::*;
-use crate::editor::components::{NodeVisual, NodeVisualOf, ContactPoint, LookVector, EyeVisual, Selectable, TargetMarker, DirectionVector};
 use crate::ui::state::DisplaySettings;
-use super::mesh::{create_local_line_mesh, create_hollow_circle_mesh, create_filled_circle_mesh, create_x_marker_mesh};
 
 // Computes the look direction based on the node type and acceleration.
 pub fn get_node_color(node_type: NodeType) -> Color {
@@ -51,7 +53,7 @@ pub fn spawn_node_visuals(
             let eye_dist = node.radius * EYE_DISTANCE_RATIO;
             let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
             let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
-            
+
             let alpha = if node.node_type == NodeType::Anchor { 1.0 } else { 0.0 };
             let eye_mesh = meshes.add(create_filled_circle_mesh(EYE_RADIUS, CONTACT_SEGMENTS));
             let eye_mat = materials.add(ColorMaterial::from_color(EYE_COLOR.with_alpha(alpha)));
@@ -62,15 +64,17 @@ pub fn spawn_node_visuals(
             let target_mat = materials.add(ColorMaterial::from_color(TARGET_MARKER_COLOR.with_alpha(alpha)));
             spawn_target_position_marker(parent, target_mesh, target_mat);
 
-            let dir_mesh = meshes.add(create_local_line_mesh(DIRECTION_VECTOR_LENGTH, DIRECTION_VECTOR_THICKNESS));
+            let dir_mesh = meshes.add(create_local_line_mesh(
+                DIRECTION_VECTOR_LENGTH,
+                DIRECTION_VECTOR_THICKNESS,
+            ));
             let dir_mat = materials.add(ColorMaterial::from_color(DIRECTION_VECTOR_COLOR.with_alpha(alpha)));
             spawn_direction_vector(parent, dir_mesh, dir_mat);
         });
 
-        commands.entity(entity).insert((
-            Transform::from_translation(node.position.extend(0.0)),
-            Selectable,
-        ));
+        commands
+            .entity(entity)
+            .insert((Transform::from_translation(node.position.extend(0.0)), Selectable));
     }
 }
 
@@ -79,16 +83,60 @@ pub fn sync_node_visuals(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut node_query: Query<(&Node, &mut Transform, &Children), Changed<Node>>,
     mut visual_query: Query<&mut Mesh2d, With<NodeVisual>>,
-    mut contact_query: Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>, Without<EyeVisual>)>,
+    mut contact_query: Query<
+        &mut Transform,
+        (
+            With<ContactPoint>,
+            Without<Node>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+        ),
+    >,
     contact_children: Query<Entity, With<ContactPoint>>,
-    mut look_query: Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>, Without<EyeVisual>)>,
+    mut look_query: Query<
+        &mut Transform,
+        (
+            With<LookVector>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<EyeVisual>,
+        ),
+    >,
     look_children: Query<Entity, With<LookVector>>,
-    mut eye_query: Query<&mut Transform, (With<EyeVisual>, Without<Node>, Without<ContactPoint>, Without<LookVector>)>,
+    mut eye_query: Query<
+        &mut Transform,
+        (
+            With<EyeVisual>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+        ),
+    >,
     eye_children: Query<Entity, With<EyeVisual>>,
     target_children: Query<Entity, With<TargetMarker>>,
-    mut target_query: Query<&mut Transform, (With<TargetMarker>, Without<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<DirectionVector>)>,
+    mut target_query: Query<
+        &mut Transform,
+        (
+            With<TargetMarker>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<DirectionVector>,
+        ),
+    >,
     dir_children: Query<Entity, With<DirectionVector>>,
-    mut dir_query: Query<&mut Transform, (With<DirectionVector>, Without<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>)>,
+    mut dir_query: Query<
+        &mut Transform,
+        (
+            With<DirectionVector>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<TargetMarker>,
+        ),
+    >,
     visual_material_query: Query<&MeshMaterial2d<ColorMaterial>>,
 ) {
     for (node, mut transform, children) in node_query.iter_mut() {
@@ -106,13 +154,25 @@ pub fn sync_node_visuals(
 
             if let Ok(mat_handle) = visual_material_query.get(child) {
                 if let Some(material) = materials.get_mut(mat_handle.0.id()) {
-                     if eye_children.contains(child) {
-                         material.color = if is_anchor { EYE_COLOR } else { EYE_COLOR.with_alpha(0.0) };
-                     } else if target_children.contains(child) {
-                         material.color = if is_anchor { TARGET_MARKER_COLOR } else { TARGET_MARKER_COLOR.with_alpha(0.0) };
-                     } else if dir_children.contains(child) {
-                         material.color = if is_anchor { DIRECTION_VECTOR_COLOR } else { DIRECTION_VECTOR_COLOR.with_alpha(0.0) };
-                     }
+                    if eye_children.contains(child) {
+                        material.color = if is_anchor {
+                            EYE_COLOR
+                        } else {
+                            EYE_COLOR.with_alpha(0.0)
+                        };
+                    } else if target_children.contains(child) {
+                        material.color = if is_anchor {
+                            TARGET_MARKER_COLOR
+                        } else {
+                            TARGET_MARKER_COLOR.with_alpha(0.0)
+                        };
+                    } else if dir_children.contains(child) {
+                        material.color = if is_anchor {
+                            DIRECTION_VECTOR_COLOR
+                        } else {
+                            DIRECTION_VECTOR_COLOR.with_alpha(0.0)
+                        };
+                    }
                 }
             }
         }
@@ -126,8 +186,20 @@ pub fn sync_node_visuals(
             let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
             let eye_offsets = [r_eye, l_eye];
             sync_eye_positions(children, &eye_offsets, &eye_children, &mut eye_query);
-            sync_target_position_marker(children, node.target_position, node.position, &target_children, &mut target_query);
-            sync_direction_vector(children, node.target_position, node.position, &dir_children, &mut dir_query);
+            sync_target_position_marker(
+                children,
+                node.target_position,
+                node.position,
+                &target_children,
+                &mut target_query,
+            );
+            sync_direction_vector(
+                children,
+                node.target_position,
+                node.position,
+                &dir_children,
+                &mut dir_query,
+            );
         }
     }
 }
@@ -151,10 +223,46 @@ pub fn update_node_visibility(
 
 pub fn update_debug_visibility(
     display_settings: Res<DisplaySettings>,
-    mut contacts: Query<&mut Visibility, (With<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>, Without<DirectionVector>)>,
-    mut looks: Query<&mut Visibility, (With<LookVector>, Without<ContactPoint>, Without<EyeVisual>, Without<TargetMarker>, Without<DirectionVector>)>,
-    mut targets: Query<&mut Visibility, (With<TargetMarker>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<DirectionVector>)>,
-    mut dirs: Query<&mut Visibility, (With<DirectionVector>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>)>,
+    mut contacts: Query<
+        &mut Visibility,
+        (
+            With<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<TargetMarker>,
+            Without<DirectionVector>,
+        ),
+    >,
+    mut looks: Query<
+        &mut Visibility,
+        (
+            With<LookVector>,
+            Without<ContactPoint>,
+            Without<EyeVisual>,
+            Without<TargetMarker>,
+            Without<DirectionVector>,
+        ),
+    >,
+    mut targets: Query<
+        &mut Visibility,
+        (
+            With<TargetMarker>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<DirectionVector>,
+        ),
+    >,
+    mut dirs: Query<
+        &mut Visibility,
+        (
+            With<DirectionVector>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<TargetMarker>,
+        ),
+    >,
 ) {
     if !display_settings.is_changed() {
         return;
@@ -200,7 +308,11 @@ pub fn update_eye_visibility(
 // =============================================================================
 
 fn get_contact_color(node_type: NodeType) -> Color {
-    if node_type == NodeType::Anchor { ANCHOR_CONTACT_COLOR } else { CONTACT_COLOR }
+    if node_type == NodeType::Anchor {
+        ANCHOR_CONTACT_COLOR
+    } else {
+        CONTACT_COLOR
+    }
 }
 
 fn spawn_contact_point(
@@ -229,8 +341,7 @@ fn spawn_look_vector(
         LookVector,
         Mesh2d(mesh),
         MeshMaterial2d(material),
-        Transform::from_rotation(Quat::from_rotation_z(angle))
-            .with_translation(Vec3::new(0.0, 0.0, 0.2)),
+        Transform::from_rotation(Quat::from_rotation_z(angle)).with_translation(Vec3::new(0.0, 0.0, 0.2)),
     ));
 }
 
@@ -248,11 +359,7 @@ fn spawn_target_position_marker(
     ));
 }
 
-fn spawn_direction_vector(
-    parent: &mut ChildSpawnerCommands,
-    mesh: Handle<Mesh>,
-    material: Handle<ColorMaterial>,
-) {
+fn spawn_direction_vector(parent: &mut ChildSpawnerCommands, mesh: Handle<Mesh>, material: Handle<ColorMaterial>) {
     parent.spawn((
         Name::new("Direction Vector"),
         DirectionVector,
@@ -277,7 +384,15 @@ fn sync_look_rotation(
     child: Entity,
     angle: f32,
     look_children: &Query<Entity, With<LookVector>>,
-    look_query: &mut Query<&mut Transform, (With<LookVector>, Without<Node>, Without<ContactPoint>, Without<EyeVisual>)>,
+    look_query: &mut Query<
+        &mut Transform,
+        (
+            With<LookVector>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<EyeVisual>,
+        ),
+    >,
 ) {
     if look_children.get(child).is_ok() {
         if let Ok(mut lt) = look_query.get_mut(child) {
@@ -306,7 +421,15 @@ fn sync_eye_positions(
     children: &Children,
     offsets: &[Vec2],
     eye_children: &Query<Entity, With<EyeVisual>>,
-    eye_query: &mut Query<&mut Transform, (With<EyeVisual>, Without<Node>, Without<ContactPoint>, Without<LookVector>)>,
+    eye_query: &mut Query<
+        &mut Transform,
+        (
+            With<EyeVisual>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+        ),
+    >,
 ) {
     let mut idx = 0;
     for child in children.iter() {
@@ -326,7 +449,15 @@ fn sync_contact_positions(
     children: &Children,
     offsets: &[Vec2],
     contact_children: &Query<Entity, With<ContactPoint>>,
-    contact_query: &mut Query<&mut Transform, (With<ContactPoint>, Without<Node>, Without<LookVector>, Without<EyeVisual>)>,
+    contact_query: &mut Query<
+        &mut Transform,
+        (
+            With<ContactPoint>,
+            Without<Node>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+        ),
+    >,
 ) {
     let mut idx = 0;
     for child in children.iter() {
@@ -347,7 +478,17 @@ fn sync_target_position_marker(
     target_position: Vec2,
     current_position: Vec2,
     target_children: &Query<Entity, With<TargetMarker>>,
-    target_query: &mut Query<&mut Transform, (With<TargetMarker>, Without<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<DirectionVector>)>,
+    target_query: &mut Query<
+        &mut Transform,
+        (
+            With<TargetMarker>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<DirectionVector>,
+        ),
+    >,
 ) {
     for child in children.iter() {
         if target_children.get(child).is_ok() {
@@ -365,7 +506,17 @@ fn sync_direction_vector(
     target_position: Vec2,
     current_position: Vec2,
     dir_children: &Query<Entity, With<DirectionVector>>,
-    dir_query: &mut Query<&mut Transform, (With<DirectionVector>, Without<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>)>,
+    dir_query: &mut Query<
+        &mut Transform,
+        (
+            With<DirectionVector>,
+            Without<Node>,
+            Without<ContactPoint>,
+            Without<LookVector>,
+            Without<EyeVisual>,
+            Without<TargetMarker>,
+        ),
+    >,
 ) {
     for child in children.iter() {
         if dir_children.get(child).is_ok() {

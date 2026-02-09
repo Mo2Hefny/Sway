@@ -2,13 +2,12 @@
 
 use bevy::prelude::*;
 
-
-use crate::core::{Node as SimNode, DistanceConstraint};
-use crate::ui::state::InputState;
-use crate::editor::constants::*;
-use crate::editor::components::{NodeVisual, Selected, Selectable};
-use crate::editor::visuals::node::get_node_color;
 use super::input::{cursor_world_pos, pick_node_at};
+use crate::core::{DistanceConstraint, Node as SimNode};
+use crate::editor::components::{NodeVisual, Selectable, Selected};
+use crate::editor::constants::*;
+use crate::editor::visuals::node::get_node_color;
+use crate::ui::state::InputState;
 use crate::ui::state::{EditorTool, EditorToolState};
 
 #[derive(Resource, Clone, Debug, Default, Reflect)]
@@ -48,7 +47,9 @@ pub fn handle_node_selection(
         return;
     }
 
-    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
+        return;
+    };
     let clicked_node = pick_node_at(world_pos, 0.0, &node_query);
 
     for prev_selected in selected_query.iter() {
@@ -76,7 +77,11 @@ pub fn update_selection_visuals(
     for (entity, node, children) in node_query.iter() {
         let is_selected = selection.is_selected(entity);
 
-        let color = if is_selected { SELECTION_COLOR } else { get_node_color(node.node_type) };
+        let color = if is_selected {
+            SELECTION_COLOR
+        } else {
+            get_node_color(node.node_type)
+        };
 
         for child in children.iter() {
             if let Ok(material_handle) = visual_query.get(child) {

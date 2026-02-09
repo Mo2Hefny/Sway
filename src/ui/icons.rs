@@ -1,8 +1,8 @@
 //! Icon loading and management.
 
-use bevy::prelude::*;
 use bevy::asset::RenderAssetUsages;
 use bevy::image::Image;
+use bevy::prelude::*;
 
 /// Handles to rasterized SVG icons.
 #[derive(Resource, Clone, Debug, Default)]
@@ -67,86 +67,26 @@ impl UiIcons {
         const ICON_SIZE: u32 = 24;
 
         Self {
-            hamburger: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/hamburger-menu.svg"),
-                ICON_SIZE,
-            ),
-            import: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/import.svg"),
-                ICON_SIZE,
-            ),
-            export: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/export.svg"),
-                ICON_SIZE,
-            ),
-            caret_right: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/caret-right.svg"),
-                ICON_SIZE,
-            ),
-            caret_left: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/caret-left.svg"),
-                ICON_SIZE,
-            ),
+            hamburger: Self::rasterize_svg(images, include_bytes!("../assets/icons/hamburger-menu.svg"), ICON_SIZE),
+            import: Self::rasterize_svg(images, include_bytes!("../assets/icons/import.svg"), ICON_SIZE),
+            export: Self::rasterize_svg(images, include_bytes!("../assets/icons/export.svg"), ICON_SIZE),
+            caret_right: Self::rasterize_svg(images, include_bytes!("../assets/icons/caret-right.svg"), ICON_SIZE),
+            caret_left: Self::rasterize_svg(images, include_bytes!("../assets/icons/caret-left.svg"), ICON_SIZE),
             properties: Self::rasterize_svg(
                 images,
                 include_bytes!("../assets/icons/options-vertical.svg"),
                 ICON_SIZE,
             ),
-            transform: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/transform.svg"),
-                ICON_SIZE,
-            ),
-            constraints: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/vector.svg"),
-                ICON_SIZE,
-            ),
-            cursor_tool: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/cursor.svg"),
-                ICON_SIZE,
-            ),
-            add_node_tool: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/add-node.svg"),
-                ICON_SIZE,
-            ),
-            add_edge_tool: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/vector.svg"),
-                ICON_SIZE,
-            ),
-            move_tool: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/move-cursor.svg"),
-                ICON_SIZE,
-            ),
-            play: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/play.svg"),
-                ICON_SIZE,
-            ),
-            pause: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/pause.svg"),
-                ICON_SIZE,
-            ),
-            stop: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/stop.svg"),
-                ICON_SIZE,
-            ),
-            checkmark: Self::rasterize_svg(
-                images,
-                include_bytes!("../assets/icons/x.svg"),
-                ICON_SIZE,
-            ),
+            transform: Self::rasterize_svg(images, include_bytes!("../assets/icons/transform.svg"), ICON_SIZE),
+            constraints: Self::rasterize_svg(images, include_bytes!("../assets/icons/vector.svg"), ICON_SIZE),
+            cursor_tool: Self::rasterize_svg(images, include_bytes!("../assets/icons/cursor.svg"), ICON_SIZE),
+            add_node_tool: Self::rasterize_svg(images, include_bytes!("../assets/icons/add-node.svg"), ICON_SIZE),
+            add_edge_tool: Self::rasterize_svg(images, include_bytes!("../assets/icons/vector.svg"), ICON_SIZE),
+            move_tool: Self::rasterize_svg(images, include_bytes!("../assets/icons/move-cursor.svg"), ICON_SIZE),
+            play: Self::rasterize_svg(images, include_bytes!("../assets/icons/play.svg"), ICON_SIZE),
+            pause: Self::rasterize_svg(images, include_bytes!("../assets/icons/pause.svg"), ICON_SIZE),
+            stop: Self::rasterize_svg(images, include_bytes!("../assets/icons/stop.svg"), ICON_SIZE),
+            checkmark: Self::rasterize_svg(images, include_bytes!("../assets/icons/x.svg"), ICON_SIZE),
         }
     }
 }

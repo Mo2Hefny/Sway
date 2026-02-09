@@ -5,9 +5,9 @@ pub mod editor;
 pub mod ui;
 
 use bevy::{
+    asset::AssetMetaCheck,
     diagnostic::{FrameCount, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    asset::AssetMetaCheck,
 };
 use bevy_egui::EguiPlugin;
 
@@ -40,11 +40,7 @@ impl Plugin for AppPlugin {
         ));
 
         // Add Sway plugins in *dependency order*
-        app.add_plugins((
-            EguiPlugin::default(),
-            editor::EditorPlugin,
-            ui::UiPlugin,
-        ));
+        app.add_plugins((EguiPlugin::default(), editor::EditorPlugin, ui::UiPlugin));
 
         app.add_systems(Startup, spawn_camera);
         app.add_systems(Update, make_visible);
@@ -53,10 +49,7 @@ impl Plugin for AppPlugin {
 
 /// Spawn the main 2D camera.
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((
-        Name::new("Main Camera"),
-        Camera2d::default(),
-    ));
+    commands.spawn((Name::new("Main Camera"), Camera2d::default()));
 }
 
 /// Hide the window at startup; show it after a few frames to avoid displaying a blank screen.
@@ -68,6 +61,6 @@ fn make_visible(mut window: Query<&mut Window>, frames: Res<FrameCount>) {
 
 pub mod prelude {
     #![allow(unused_imports)]
-    pub use crate::ui::prelude::*;
     pub use crate::AppPlugin;
+    pub use crate::ui::prelude::*;
 }

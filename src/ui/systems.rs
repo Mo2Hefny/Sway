@@ -2,22 +2,19 @@
 
 use bevy::prelude::*;
 
-use crate::core::{
-    Node as SimNode, DistanceConstraint, 
-    build_scene_data, spawn_scene_data, export_to_file, import_from_file,
-};
-use crate::editor::tools::selection::Selection;
-use crate::editor::components::{NodeVisual, ConstraintVisual, ConstraintPreview};
 use super::icons::UiIcons;
 use super::state::*;
 use super::theme::interaction::Active;
 use super::widgets::{
-    CheckboxButton, CheckboxSetting, CheckboxIcon, HamburgerButton, PanelBody,
-    ImportButton, ExportButton, CaretButton, CaretIcon, InspectorPanel,
-    PageIconButton, PageIconFor, InspectorTitle, ToolButton, ToolButtonFor,
-    ToolBarRoot, FloatingPanel, RightSidebarRoot, InstructionOverlayRoot, BottomToolbar,
-    PlaybackButton, PlaybackAction,
+    BottomToolbar, CaretButton, CaretIcon, CheckboxButton, CheckboxIcon, CheckboxSetting, ExportButton, FloatingPanel,
+    HamburgerButton, ImportButton, InspectorPanel, InspectorTitle, InstructionOverlayRoot, PageIconButton, PageIconFor,
+    PanelBody, PlaybackAction, PlaybackButton, RightSidebarRoot, ToolBarRoot, ToolButton, ToolButtonFor,
 };
+use crate::core::{
+    DistanceConstraint, Node as SimNode, build_scene_data, export_to_file, import_from_file, spawn_scene_data,
+};
+use crate::editor::components::{ConstraintPreview, ConstraintVisual, NodeVisual};
+use crate::editor::tools::selection::Selection;
 
 /// Handles checkbox button clicks and updates display settings.
 pub fn handle_checkbox_clicks(
@@ -294,11 +291,7 @@ pub fn update_tool_bar_position(
         return;
     }
 
-    let right_offset = if inspector_state.open {
-        px(328.0)
-    } else {
-        px(48.0)
-    };
+    let right_offset = if inspector_state.open { px(328.0) } else { px(48.0) };
 
     for mut node in &mut tool_bar_query {
         node.right = right_offset;
@@ -306,10 +299,7 @@ pub fn update_tool_bar_position(
 }
 
 /// Handles 'H' key press to toggle overall UI visibility.
-pub fn handle_ui_toggle_input(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut ui_visibility: ResMut<UiVisibility>,
-) {
+pub fn handle_ui_toggle_input(keyboard: Res<ButtonInput<KeyCode>>, mut ui_visibility: ResMut<UiVisibility>) {
     if keyboard.just_pressed(KeyCode::KeyH) {
         ui_visibility.visible = !ui_visibility.visible;
         info!("UI visibility: {}", ui_visibility.visible);
@@ -319,11 +309,56 @@ pub fn handle_ui_toggle_input(
 /// Updates visibility of all UI panels based on global UI visibility state.
 pub fn update_ui_visibility(
     ui_visibility: Res<UiVisibility>,
-    mut floating_panel_query: Query<&mut Visibility, (With<FloatingPanel>, Without<RightSidebarRoot>, Without<ToolBarRoot>, Without<InstructionOverlayRoot>, Without<BottomToolbar>)>,
-    mut sidebar_query: Query<&mut Visibility, (With<RightSidebarRoot>, Without<FloatingPanel>, Without<ToolBarRoot>, Without<InstructionOverlayRoot>, Without<BottomToolbar>)>,
-    mut tool_bar_query: Query<&mut Visibility, (With<ToolBarRoot>, Without<FloatingPanel>, Without<RightSidebarRoot>, Without<InstructionOverlayRoot>, Without<BottomToolbar>)>,
-    mut overlay_query: Query<&mut Visibility, (With<InstructionOverlayRoot>, Without<FloatingPanel>, Without<RightSidebarRoot>, Without<ToolBarRoot>, Without<BottomToolbar>)>,
-    mut bottom_bar_query: Query<&mut Visibility, (With<BottomToolbar>, Without<FloatingPanel>, Without<RightSidebarRoot>, Without<ToolBarRoot>, Without<InstructionOverlayRoot>)>,
+    mut floating_panel_query: Query<
+        &mut Visibility,
+        (
+            With<FloatingPanel>,
+            Without<RightSidebarRoot>,
+            Without<ToolBarRoot>,
+            Without<InstructionOverlayRoot>,
+            Without<BottomToolbar>,
+        ),
+    >,
+    mut sidebar_query: Query<
+        &mut Visibility,
+        (
+            With<RightSidebarRoot>,
+            Without<FloatingPanel>,
+            Without<ToolBarRoot>,
+            Without<InstructionOverlayRoot>,
+            Without<BottomToolbar>,
+        ),
+    >,
+    mut tool_bar_query: Query<
+        &mut Visibility,
+        (
+            With<ToolBarRoot>,
+            Without<FloatingPanel>,
+            Without<RightSidebarRoot>,
+            Without<InstructionOverlayRoot>,
+            Without<BottomToolbar>,
+        ),
+    >,
+    mut overlay_query: Query<
+        &mut Visibility,
+        (
+            With<InstructionOverlayRoot>,
+            Without<FloatingPanel>,
+            Without<RightSidebarRoot>,
+            Without<ToolBarRoot>,
+            Without<BottomToolbar>,
+        ),
+    >,
+    mut bottom_bar_query: Query<
+        &mut Visibility,
+        (
+            With<BottomToolbar>,
+            Without<FloatingPanel>,
+            Without<RightSidebarRoot>,
+            Without<ToolBarRoot>,
+            Without<InstructionOverlayRoot>,
+        ),
+    >,
 ) {
     if !ui_visibility.is_changed() {
         return;

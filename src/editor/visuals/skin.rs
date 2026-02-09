@@ -1,7 +1,7 @@
 //! Skin mesh rendering using chain angles and Catmull-Rom splines.
 
-use bevy::prelude::*;
 use bevy::mesh::Indices;
+use bevy::prelude::*;
 use bevy::render::render_resource::PrimitiveTopology;
 
 use crate::core::components::{DistanceConstraint, Node, NodeType};
@@ -11,7 +11,6 @@ use crate::ui::state::DisplaySettings;
 
 use std::collections::HashMap;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_6, PI};
-
 
 pub fn spawn_skin_visual(
     mut commands: Commands,
@@ -52,10 +51,7 @@ pub fn sync_skin_visual(
         (&Mesh2d, &MeshMaterial2d<ColorMaterial>, &mut Visibility),
         (With<SkinMesh>, Without<SkinOutline>),
     >,
-    mut outline_query: Query<
-        (&Mesh2d, &mut Visibility),
-        (With<SkinOutline>, Without<SkinMesh>),
-    >,
+    mut outline_query: Query<(&Mesh2d, &mut Visibility), (With<SkinOutline>, Without<SkinMesh>)>,
 ) {
     let show = display_settings.show_skin;
     let opaque = !display_settings.show_nodes;
@@ -104,23 +100,16 @@ pub fn sync_skin_visual(
 // =============================================================================
 
 fn get_offset_pos(node: &Node, angle_offset: f32, length_offset: f32) -> Vec2 {
-    node.position
-        + Vec2::from_angle(node.chain_angle + PI + angle_offset) * (node.radius + length_offset)
+    node.position + Vec2::from_angle(node.chain_angle + PI + angle_offset) * (node.radius + length_offset)
 }
 
-fn build_body_polygon(
-    chain: &[(Entity, f32)],
-    nodes: &Query<&Node>,
-) -> Option<Vec<Vec2>> {
+fn build_body_polygon(chain: &[(Entity, f32)], nodes: &Query<&Node>) -> Option<Vec<Vec2>> {
     let n = chain.len();
     if n < 2 {
         return None;
     }
 
-    let chain_nodes: Vec<&Node> = chain
-        .iter()
-        .filter_map(|&(entity, _)| nodes.get(entity).ok())
-        .collect();
+    let chain_nodes: Vec<&Node> = chain.iter().filter_map(|&(entity, _)| nodes.get(entity).ok()).collect();
 
     if chain_nodes.len() < 2 {
         return None;
@@ -355,10 +344,7 @@ fn build_outline_mesh(polygons: &[Vec<Vec2>], thickness: f32) -> Mesh {
         .with_inserted_indices(Indices::U32(indices))
 }
 
-fn build_ordered_chains(
-    constraints: &Query<&DistanceConstraint>,
-    nodes: &Query<&Node>,
-) -> Vec<Vec<(Entity, f32)>> {
+fn build_ordered_chains(constraints: &Query<&DistanceConstraint>, nodes: &Query<&Node>) -> Vec<Vec<(Entity, f32)>> {
     let mut adj: HashMap<Entity, Vec<(Entity, f32)>> = HashMap::new();
     for c in constraints.iter() {
         adj.entry(c.node_a).or_default().push((c.node_b, c.rest_length));

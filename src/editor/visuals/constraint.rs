@@ -2,10 +2,10 @@
 
 use bevy::prelude::*;
 
-use crate::editor::constants::*;
-use crate::editor::components::{ConstraintVisual, ConstraintVisualOf};
 use super::mesh::create_line_mesh;
 use crate::core::{DistanceConstraint, Node};
+use crate::editor::components::{ConstraintVisual, ConstraintVisualOf};
+use crate::editor::constants::*;
 use crate::ui::state::DisplaySettings;
 
 pub fn spawn_constraint_visuals(
@@ -16,8 +16,12 @@ pub fn spawn_constraint_visuals(
     nodes: Query<&Node>,
 ) {
     for (entity, constraint) in new_constraints.iter() {
-        let Ok(node_a) = nodes.get(constraint.node_a) else { continue };
-        let Ok(node_b) = nodes.get(constraint.node_b) else { continue };
+        let Ok(node_a) = nodes.get(constraint.node_a) else {
+            continue;
+        };
+        let Ok(node_b) = nodes.get(constraint.node_b) else {
+            continue;
+        };
 
         let (start, end) = edge_endpoints(node_a, node_b);
         let mesh = create_line_mesh(start, end, CONSTRAINT_LINE_THICKNESS);

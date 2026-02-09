@@ -1,12 +1,12 @@
 //! Reusable text input widget for numeric values.
 
+use bevy::input::keyboard::{Key, KeyboardInput};
+use bevy::picking::prelude::Pickable;
 use bevy::prelude::*;
 use bevy::ui::Node as UiNode;
-use bevy::picking::prelude::Pickable;
-use bevy::input::keyboard::{Key, KeyboardInput};
 
-use crate::ui::theme::palette::*;
 use crate::ui::theme::interaction::InteractionPalette;
+use crate::ui::theme::palette::*;
 
 // ============================================================================
 // COMPONENTS
@@ -74,29 +74,29 @@ pub fn spawn_axis_input<T: Component + Clone + Send + Sync + 'static>(
     width: f32,
 ) {
     // Container with colored strip + input field
-    parent.spawn((
-        UiNode {
+    parent
+        .spawn((UiNode {
             flex_direction: FlexDirection::Row,
             align_items: AlignItems::Stretch,
             height: px(INPUT_HEIGHT),
             ..default()
-        },
-    )).with_children(|group| {
-        // Colored axis strip (left side)
-        group.spawn((
-            UiNode {
-                width: px(AXIS_STRIP_WIDTH),
-                height: Val::Percent(100.0),
-                border_radius: BorderRadius::left(px(3.0)),
-                ..default()
-            },
-            BackgroundColor(axis_color),
-            Pickable::IGNORE,
-        ));
-        
-        // Input field
-        spawn_input_body(group, value, field, width, BorderRadius::right(px(3.0)));
-    });
+        },))
+        .with_children(|group| {
+            // Colored axis strip (left side)
+            group.spawn((
+                UiNode {
+                    width: px(AXIS_STRIP_WIDTH),
+                    height: Val::Percent(100.0),
+                    border_radius: BorderRadius::left(px(3.0)),
+                    ..default()
+                },
+                BackgroundColor(axis_color),
+                Pickable::IGNORE,
+            ));
+
+            // Input field
+            spawn_input_body(group, value, field, width, BorderRadius::right(px(3.0)));
+        });
 }
 
 /// Spawns a numeric input field (without axis strip).
@@ -117,36 +117,38 @@ fn spawn_input_body<T: Component + Clone + Send + Sync + 'static>(
     width: f32,
     border_radius: BorderRadius,
 ) {
-    parent.spawn((
-        TextInput,
-        field.clone(),
-        Button,
-        UiNode {
-            width: px(width),
-            height: px(INPUT_HEIGHT),
-            padding: UiRect::horizontal(px(6.0)),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::FlexEnd,
-            border_radius,
-            ..default()
-        },
-        BackgroundColor(INPUT_FIELD),
-        InteractionPalette {
-            none: INPUT_FIELD,
-            hovered: INPUT_FIELD_HOVER,
-            pressed: INPUT_FIELD_FOCUS,
-            active: INPUT_FIELD_FOCUS,
-        },
-    )).with_children(|input| {
-        input.spawn((
-            TextInputDisplay,
-            field,
-            Text::new(format!("{:.2}", value)),
-            TextFont::from_font_size(INPUT_FONT_SIZE),
-            TextColor(TEXT),
-            Pickable::IGNORE,
-        ));
-    });
+    parent
+        .spawn((
+            TextInput,
+            field.clone(),
+            Button,
+            UiNode {
+                width: px(width),
+                height: px(INPUT_HEIGHT),
+                padding: UiRect::horizontal(px(6.0)),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::FlexEnd,
+                border_radius,
+                ..default()
+            },
+            BackgroundColor(INPUT_FIELD),
+            InteractionPalette {
+                none: INPUT_FIELD,
+                hovered: INPUT_FIELD_HOVER,
+                pressed: INPUT_FIELD_FOCUS,
+                active: INPUT_FIELD_FOCUS,
+            },
+        ))
+        .with_children(|input| {
+            input.spawn((
+                TextInputDisplay,
+                field,
+                Text::new(format!("{:.2}", value)),
+                TextFont::from_font_size(INPUT_FONT_SIZE),
+                TextColor(TEXT),
+                Pickable::IGNORE,
+            ));
+        });
 }
 
 // ============================================================================
@@ -170,7 +172,7 @@ pub fn handle_text_input_focus_system<T: Component + Clone + Copy + Send + Sync 
                     break;
                 }
             }
-            
+
             focus.entity = Some(entity);
             focus.buffer = current_value;
             focus.field_kind = Some(field.kind);
@@ -187,16 +189,20 @@ pub fn handle_text_input_keyboard_system<T: Component + Clone + Copy + Send + Sy
     mut keyboard_events: MessageReader<KeyboardInput>,
     mut text_query: Query<(&mut Text, &InputField<T>), With<TextInputDisplay>>,
 ) -> Option<(T, f32)> {
-    let Some(_focused_entity) = focus.entity else { return None };
-    let Some(field_kind) = focus.field_kind else { return None };
-    
+    let Some(_focused_entity) = focus.entity else {
+        return None;
+    };
+    let Some(field_kind) = focus.field_kind else {
+        return None;
+    };
+
     let mut result = None;
-    
+
     for event in keyboard_events.read() {
         if !event.state.is_pressed() {
             continue;
         }
-        
+
         match &event.logical_key {
             Key::Character(c) => {
                 let ch = c.as_str();
@@ -235,7 +241,7 @@ pub fn handle_text_input_keyboard_system<T: Component + Clone + Copy + Send + Sy
             _ => {}
         }
     }
-    
+
     result
 }
 
@@ -247,7 +253,11 @@ fn update_input_text<T: Component + Clone + Copy + Send + Sync + PartialEq + 'st
 ) {
     for (mut text, field) in text_query.iter_mut() {
         if field.kind == field_kind {
-            text.0 = if new_text.is_empty() { "0".to_string() } else { new_text.to_string() };
+            text.0 = if new_text.is_empty() {
+                "0".to_string()
+            } else {
+                new_text.to_string()
+            };
             break;
         }
     }
@@ -277,9 +287,9 @@ pub fn handle_click_outside_system<T: Clone + Copy + Send + Sync + Default + 'st
     if !mouse.just_pressed(MouseButton::Left) {
         return None;
     }
-    
+
     let clicking_input = input_query.iter().any(|i| *i != Interaction::None);
-    
+
     if !clicking_input && focus.entity.is_some() {
         let result = if let Some(field_kind) = focus.field_kind {
             if let Ok(value) = focus.buffer.parse::<f32>() {
@@ -291,14 +301,14 @@ pub fn handle_click_outside_system<T: Clone + Copy + Send + Sync + Default + 'st
         } else {
             None
         };
-        
+
         focus.entity = None;
         focus.buffer.clear();
         focus.field_kind = None;
-        
+
         return result;
     }
-    
+
     None
 }
 

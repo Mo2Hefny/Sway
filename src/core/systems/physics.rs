@@ -5,11 +5,7 @@ use bevy::prelude::*;
 use crate::core::components::{Node, Playground};
 use crate::ui::state::PlaybackState;
 
-pub fn verlet_integration_system(
-    playback: Res<PlaybackState>,
-    time: Res<Time>,
-    mut nodes: Query<&mut Node>,
-) {
+pub fn verlet_integration_system(playback: Res<PlaybackState>, time: Res<Time>, mut nodes: Query<&mut Node>) {
     if !playback.is_playing() {
         return;
     }

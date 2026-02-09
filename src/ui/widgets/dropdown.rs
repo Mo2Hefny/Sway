@@ -1,12 +1,12 @@
 //! Reusable dropdown widget.
 
+use bevy::picking::prelude::Pickable;
 use bevy::prelude::*;
 use bevy::ui::Node as UiNode;
-use bevy::picking::prelude::Pickable;
 
-use crate::ui::theme::palette::*;
+use super::text_input::{INPUT_FONT_SIZE, INPUT_HEIGHT, px};
 use crate::ui::theme::interaction::InteractionPalette;
-use super::text_input::{px, INPUT_HEIGHT, INPUT_FONT_SIZE};
+use crate::ui::theme::palette::*;
 
 // ============================================================================
 // COMPONENTS
@@ -48,86 +48,88 @@ pub fn spawn_dropdown<T, F>(
     current_text: &str,
     field: Option<F>,
     width: f32,
-) -> Entity 
-where 
+) -> Entity
+where
     T: Send + Sync + 'static,
     F: Component + Clone,
 {
     let wrapper_entity = Entity::PLACEHOLDER;
-    
-    parent.spawn((
-        Name::new("Dropdown Wrapper"),
-        UiNode {
-            flex_direction: FlexDirection::Column,
-            ..default()
-        },
-    )).with_children(|wrapper| {
-        // Dropdown button
-        let mut btn = wrapper.spawn((
-            Name::new("Dropdown Button"),
-            DropdownButton,
-            Button,
+
+    parent
+        .spawn((
+            Name::new("Dropdown Wrapper"),
             UiNode {
-                width: px(width),
-                height: px(INPUT_HEIGHT),
-                padding: UiRect::horizontal(px(8.0)),
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::SpaceBetween,
-                border_radius: BorderRadius::all(px(3.0)),
-                border: UiRect::all(px(1.0)),
+                flex_direction: FlexDirection::Column,
                 ..default()
             },
-            BorderColor::all(BORDER),
-            BackgroundColor(INPUT_FIELD),
-            InteractionPalette {
-                none: INPUT_FIELD,
-                hovered: INPUT_FIELD_HOVER,
-                pressed: INPUT_FIELD_FOCUS,
-                active: INPUT_FIELD_FOCUS,
-            },
-        ));
-        
-        if let Some(f) = field {
-            btn.insert(f);
-        }
-        
-        btn.with_children(|btn_content| {
-            btn_content.spawn((
-                Text::new(current_text),
-                TextFont::from_font_size(INPUT_FONT_SIZE),
-                TextColor(TEXT),
-                Pickable::IGNORE,
+        ))
+        .with_children(|wrapper| {
+            // Dropdown button
+            let mut btn = wrapper.spawn((
+                Name::new("Dropdown Button"),
+                DropdownButton,
+                Button,
+                UiNode {
+                    width: px(width),
+                    height: px(INPUT_HEIGHT),
+                    padding: UiRect::horizontal(px(8.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::SpaceBetween,
+                    border_radius: BorderRadius::all(px(3.0)),
+                    border: UiRect::all(px(1.0)),
+                    ..default()
+                },
+                BorderColor::all(BORDER),
+                BackgroundColor(INPUT_FIELD),
+                InteractionPalette {
+                    none: INPUT_FIELD,
+                    hovered: INPUT_FIELD_HOVER,
+                    pressed: INPUT_FIELD_FOCUS,
+                    active: INPUT_FIELD_FOCUS,
+                },
             ));
-            btn_content.spawn((
-                Text::new("▼"),
-                TextFont::from_font_size(8.0),
-                TextColor(TEXT_SECONDARY),
-                Pickable::IGNORE,
+
+            if let Some(f) = field {
+                btn.insert(f);
+            }
+
+            btn.with_children(|btn_content| {
+                btn_content.spawn((
+                    Text::new(current_text),
+                    TextFont::from_font_size(INPUT_FONT_SIZE),
+                    TextColor(TEXT),
+                    Pickable::IGNORE,
+                ));
+                btn_content.spawn((
+                    Text::new("▼"),
+                    TextFont::from_font_size(8.0),
+                    TextColor(TEXT_SECONDARY),
+                    Pickable::IGNORE,
+                ));
+            });
+
+            // Dropdown menu (hidden by default)
+            wrapper.spawn((
+                Name::new("Dropdown Menu"),
+                DropdownMenu,
+                UiNode {
+                    position_type: PositionType::Absolute,
+                    top: px(INPUT_HEIGHT + 2.0),
+                    right: px(0.0),
+                    width: px(width),
+                    flex_direction: FlexDirection::Column,
+                    border_radius: BorderRadius::all(px(3.0)),
+                    border: UiRect::all(px(1.0)),
+                    display: Display::None,
+                    overflow: Overflow::visible(),
+                    ..default()
+                },
+                BorderColor::all(BORDER),
+                BackgroundColor(SURFACE),
+                ZIndex(100),
             ));
         });
-        
-        // Dropdown menu (hidden by default)
-        wrapper.spawn((
-            Name::new("Dropdown Menu"),
-            DropdownMenu,
-            UiNode {
-                position_type: PositionType::Absolute,
-                top: px(INPUT_HEIGHT + 2.0),
-                right: px(0.0),
-                width: px(width),
-                flex_direction: FlexDirection::Column,
-                border_radius: BorderRadius::all(px(3.0)),
-                border: UiRect::all(px(1.0)),
-                display: Display::None,
-                overflow: Overflow::visible(),
-                ..default()
-            },
-            BorderColor::all(BORDER),
-            BackgroundColor(SURFACE),
-            ZIndex(100),
-        ));
-    });
-    
+
     wrapper_entity
 }
 
@@ -139,32 +141,34 @@ pub fn spawn_dropdown_option<T: Component + Clone>(
     is_selected: bool,
 ) {
     let bg = if is_selected { SURFACE_HOVER } else { SURFACE };
-    parent.spawn((
-        Name::new(format!("Option: {}", display_text)),
-        DropdownOption(option_value),
-        Button,
-        UiNode {
-            width: Val::Percent(100.0),
-            height: px(22.0),
-            padding: UiRect::horizontal(px(8.0)),
-            align_items: AlignItems::Center,
-            ..default()
-        },
-        BackgroundColor(bg),
-        InteractionPalette {
-            none: bg,
-            hovered: SURFACE_HOVER,
-            pressed: SURFACE_PRESSED,
-            active: ACCENT,
-        },
-    )).with_children(|opt| {
-        opt.spawn((
-            Text::new(display_text),
-            TextFont::from_font_size(INPUT_FONT_SIZE),
-            TextColor(if is_selected { ACCENT } else { TEXT }),
-            Pickable::IGNORE,
-        ));
-    });
+    parent
+        .spawn((
+            Name::new(format!("Option: {}", display_text)),
+            DropdownOption(option_value),
+            Button,
+            UiNode {
+                width: Val::Percent(100.0),
+                height: px(22.0),
+                padding: UiRect::horizontal(px(8.0)),
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            BackgroundColor(bg),
+            InteractionPalette {
+                none: bg,
+                hovered: SURFACE_HOVER,
+                pressed: SURFACE_PRESSED,
+                active: ACCENT,
+            },
+        ))
+        .with_children(|opt| {
+            opt.spawn((
+                Text::new(display_text),
+                TextFont::from_font_size(INPUT_FONT_SIZE),
+                TextColor(if is_selected { ACCENT } else { TEXT }),
+                Pickable::IGNORE,
+            ));
+        });
 }
 
 // ============================================================================
@@ -180,9 +184,13 @@ pub fn handle_dropdown_toggle(
     for interaction in dropdown_query.iter() {
         if *interaction == Interaction::Pressed {
             dropdown_state.open = !dropdown_state.open;
-            
+
             for mut node in menu_query.iter_mut() {
-                node.display = if dropdown_state.open { Display::Flex } else { Display::None };
+                node.display = if dropdown_state.open {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
             }
         }
     }

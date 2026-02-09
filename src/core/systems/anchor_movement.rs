@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
-use crate::core::components::{Node, NodeType, AnchorMovementMode, ProceduralPathType, DistanceConstraint, Playground};
+use crate::core::components::{AnchorMovementMode, DistanceConstraint, Node, NodeType, Playground, ProceduralPathType};
 use crate::core::constants::*;
-use crate::core::utils::{find_connected_entities, normalize_angle, get_mouse_world_position};
+use crate::core::utils::{find_connected_entities, get_mouse_world_position, normalize_angle};
 use crate::ui::state::PlaybackState;
 
 pub fn anchor_movement_system(
@@ -22,15 +22,9 @@ pub fn anchor_movement_system(
     let total_time = time.elapsed_secs();
     let mouse_world = get_mouse_world_position(&window_query, &camera_query);
 
-    let all_nodes: Vec<(Entity, Vec2, f32)> = anchors
-        .iter()
-        .map(|(e, n)| (e, n.position, n.radius))
-        .collect();
+    let all_nodes: Vec<(Entity, Vec2, f32)> = anchors.iter().map(|(e, n)| (e, n.position, n.radius)).collect();
 
-    let constraints: Vec<(Entity, Entity)> = constraint_query
-        .iter()
-        .map(|c| (c.node_a, c.node_b))
-        .collect();
+    let constraints: Vec<(Entity, Entity)> = constraint_query.iter().map(|c| (c.node_a, c.node_b)).collect();
 
     for (entity, mut node) in anchors.iter_mut() {
         if node.node_type != NodeType::Anchor {
@@ -48,14 +42,7 @@ pub fn anchor_movement_system(
                 }
             }
             AnchorMovementMode::Procedural => {
-                update_procedural_target(
-                    entity,
-                    &mut node,
-                    total_time,
-                    &playground,
-                    &all_nodes,
-                    &constraints,
-                );
+                update_procedural_target(entity, &mut node, total_time, &playground, &all_nodes, &constraints);
                 move_toward_target(&mut node);
             }
         }
@@ -94,9 +81,7 @@ fn update_procedural_target(
     node.target_position = match node.path_type {
         ProceduralPathType::Circle => calculate_circle_target(node, t),
         ProceduralPathType::Wave => calculate_wave_target(node, t),
-        ProceduralPathType::Wander => {
-            calculate_wander_target(entity, node, t, playground, all_nodes, constraints)
-        }
+        ProceduralPathType::Wander => calculate_wander_target(entity, node, t, playground, all_nodes, constraints),
     };
 }
 
@@ -272,12 +257,7 @@ fn smooth_target_position(node: &Node, new_target: Vec2) -> Vec2 {
     prev_target.lerp(new_target, TARGET_SMOOTHING)
 }
 
-fn calculate_boundary_steering(
-    point: Vec2,
-    bounds: &SafeBounds,
-    current_angle: f32,
-    strength: f32,
-) -> f32 {
+fn calculate_boundary_steering(point: Vec2, bounds: &SafeBounds, current_angle: f32, strength: f32) -> f32 {
     let mut steering = 0.0_f32;
 
     if point.x < bounds.min.x {

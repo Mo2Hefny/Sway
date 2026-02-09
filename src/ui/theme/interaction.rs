@@ -1,7 +1,7 @@
 //! Interaction color states.
 
-use bevy::prelude::*;
 use super::palette::*;
+use bevy::prelude::*;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct InteractionPalette {

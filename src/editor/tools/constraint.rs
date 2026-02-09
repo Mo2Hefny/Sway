@@ -2,11 +2,11 @@
 
 use bevy::prelude::*;
 
-use crate::core::{DistanceConstraint, Node as SimNode};
-use crate::editor::constants::*;
-use crate::editor::components::{ConstraintPreview, Selectable};
-use crate::editor::visuals::mesh::create_dashed_line_mesh;
 use super::input::{cursor_world_pos, pick_node_at};
+use crate::core::{DistanceConstraint, Node as SimNode};
+use crate::editor::components::{ConstraintPreview, Selectable};
+use crate::editor::constants::*;
+use crate::editor::visuals::mesh::create_dashed_line_mesh;
 use crate::ui::state::{EditorTool, EditorToolState, InputState};
 
 /// Tracks the in-progress edge creation state.
@@ -38,8 +38,12 @@ pub fn handle_add_edge_tool(
         return;
     }
 
-    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
-    let Some(clicked_entity) = pick_node_at(world_pos, 4.0, &node_query) else { return };
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
+        return;
+    };
+    let Some(clicked_entity) = pick_node_at(world_pos, 4.0, &node_query) else {
+        return;
+    };
 
     match edge_state.first_node {
         None => {
@@ -56,8 +60,12 @@ pub fn handle_add_edge_tool(
                 return;
             }
 
-            let Ok((_, _, node_a)) = node_query.get(first) else { return };
-            let Ok((_, _, node_b)) = node_query.get(clicked_entity) else { return };
+            let Ok((_, _, node_a)) = node_query.get(first) else {
+                return;
+            };
+            let Ok((_, _, node_b)) = node_query.get(clicked_entity) else {
+                return;
+            };
 
             commands.spawn((
                 Name::new("Distance Constraint"),
@@ -102,7 +110,9 @@ pub fn render_constraint_preview(
 
     let Some(first) = edge_state.first_node else { return };
     let Ok(node_a) = node_query.get(first) else { return };
-    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
+        return;
+    };
 
     let dir = world_pos - node_a.position;
     let dist = dir.length();
@@ -112,7 +122,13 @@ pub fn render_constraint_preview(
     let norm = dir / dist;
     let start = node_a.position + norm * node_a.radius;
 
-    let mesh = create_dashed_line_mesh(start, world_pos, CONSTRAINT_LINE_THICKNESS, CONSTRAINT_DASH_LENGTH, CONSTRAINT_GAP_LENGTH);
+    let mesh = create_dashed_line_mesh(
+        start,
+        world_pos,
+        CONSTRAINT_LINE_THICKNESS,
+        CONSTRAINT_DASH_LENGTH,
+        CONSTRAINT_GAP_LENGTH,
+    );
 
     commands.spawn((
         Name::new("Constraint Preview"),
@@ -128,12 +144,8 @@ pub fn render_constraint_preview(
 // =============================================================================
 
 /// Checks whether a constraint already exists between two nodes.
-fn constraint_exists(
-    a: Entity,
-    b: Entity,
-    existing: &Query<&DistanceConstraint>,
-) -> bool {
-    existing.iter().any(|c| {
-        (c.node_a == a && c.node_b == b) || (c.node_a == b && c.node_b == a)
-    })
+fn constraint_exists(a: Entity, b: Entity, existing: &Query<&DistanceConstraint>) -> bool {
+    existing
+        .iter()
+        .any(|c| (c.node_a == a && c.node_b == b) || (c.node_a == b && c.node_b == a))
 }
