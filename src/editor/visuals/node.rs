@@ -10,7 +10,6 @@ use crate::editor::components::{
 use crate::editor::constants::*;
 use crate::ui::state::DisplaySettings;
 
-// Computes the look direction based on the node type and acceleration.
 pub fn get_node_color(node_type: NodeType) -> Color {
     match node_type {
         NodeType::Anchor => ANCHOR_NODE_COLOR,

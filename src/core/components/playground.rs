@@ -16,7 +16,7 @@ pub struct Playground {
 impl Default for Playground {
     fn default() -> Self {
         Self {
-            half_size: Vec2::ZERO,
+            half_size: Vec2::splat(400.0),
             border_margin: BORDER_MARGIN,
             stroke_width: STROKE_WIDTH,
             impact_damping: IMPACT_DAMPING,

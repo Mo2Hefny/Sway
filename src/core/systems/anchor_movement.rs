@@ -211,7 +211,7 @@ fn flip_direction_at_corner(node: &mut Node, new_target: &mut Vec2, bounds: &Saf
 
     let angle_variation = (t * 0.7).sin() * 0.15 + (t * 1.3).sin() * 0.08;
     let new_angle = node.wander_direction + angle_variation;
-    let amplitude = (new_target.distance(node.position));
+    let amplitude = new_target.distance(node.position);
     let new_offset = Vec2::new(new_angle.cos(), new_angle.sin()) * amplitude;
     *new_target = node.position + new_offset;
 

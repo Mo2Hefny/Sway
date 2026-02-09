@@ -22,6 +22,7 @@ impl Plugin for EditorPlugin {
         app.init_resource::<Selection>();
         app.init_resource::<Playground>();
         app.init_resource::<EdgeCreationState>();
+        app.init_resource::<CameraState>();
 
         app.add_systems(Startup, (spawn_playground_visual, spawn_skin_visual));
         app.add_systems(
@@ -41,16 +42,23 @@ impl Plugin for EditorPlugin {
         );
         app.add_systems(
             Update,
+            (handle_camera_zoom, handle_camera_pan, handle_node_selection).chain(),
+        );
+        app.add_systems(
+            Update,
             (
-                sync_playground_to_window,
-                (
-                    handle_node_selection,
-                    handle_delete_selected,
-                    handle_add_node_tool,
-                    handle_add_edge_tool,
-                ),
+                handle_delete_selected,
+                handle_add_node_tool,
+                handle_add_edge_tool,
                 cancel_edge_creation,
                 render_constraint_preview,
+            )
+                .chain()
+                .after(handle_node_selection),
+        );
+        app.add_systems(
+            Update,
+            (
                 anchor_movement_system,
                 collision_avoidance_system,
                 boundary_collision_system,
@@ -58,7 +66,8 @@ impl Plugin for EditorPlugin {
                 constraint_solving_system,
                 update_selection_visuals,
             )
-                .chain(),
+                .chain()
+                .after(render_constraint_preview),
         );
     }
 }

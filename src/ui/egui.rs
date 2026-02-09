@@ -1,6 +1,7 @@
 //! Editor UI implemented with bevy_egui, preserving the original layout.
 
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContexts, EguiTextureHandle, egui};
 
 use crate::core::constants::{MAX_CONSTRAINT_DISTANCE, MIN_CONSTRAINT_DISTANCE};
@@ -85,9 +86,11 @@ fn to_egui_color(c: Color) -> egui::Color32 {
 /// Main editor UI system: draws all panels in the original layout and updates InputState.
 pub fn editor_ui_system(
     mut contexts: EguiContexts,
-    mut display_settings: ResMut<DisplaySettings>,
-    mut panel_state: ResMut<FloatingPanelState>,
-    mut inspector_state: ResMut<InspectorState>,
+    (mut display_settings, mut panel_state, mut inspector_state): (
+        ResMut<DisplaySettings>,
+        ResMut<FloatingPanelState>,
+        ResMut<InspectorState>,
+    ),
     mut tool_state: ResMut<EditorToolState>,
     mut playback: ResMut<PlaybackState>,
     ui_visibility: Res<UiVisibility>,
@@ -96,10 +99,11 @@ pub fn editor_ui_system(
     mut egui_icons: ResMut<EguiIconTextures>,
     mut import_requested: ResMut<ImportRequested>,
     selection: Res<Selection>,
-    playground: Res<Playground>,
+    mut playground: ResMut<Playground>,
     mut node_query: Query<(Entity, &mut SimNode)>,
     constraint_query: Query<(Entity, &DistanceConstraint)>,
     mut pending_actions: ResMut<PendingConstraintActions>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
     let mut node_deletes: Vec<Entity> = Vec::new();
     ensure_icons_registered(&mut contexts, &icons, &mut egui_icons);
@@ -180,6 +184,28 @@ pub fn editor_ui_system(
                     if ui.button(BTN_EXPORT).clicked() {
                         let scene = build_scene_data(&node_query, &constraint_query);
                         export_to_file(&scene);
+                    }
+
+                    // Playground size slider
+                    ui.add_space(16.0);
+                    ui.separator();
+                    ui.add_space(8.0);
+                    ui.label(LABEL_PLAYGROUND_SIZE);
+                    ui.label(LABEL_PLAYGROUND_SIZE);
+
+                    // Aspect ratio logic
+                    let Some(window) = windows.iter().next() else { return };
+                    let aspect = window.width() / window.height();
+
+                    // Control half-height, derive half-width from aspect ratio
+                    let mut half_height = playground.half_size.y;
+
+                    if ui
+                        .add(egui::Slider::new(&mut half_height, 400.0..=2000.0).text("Half Size"))
+                        .changed()
+                    {
+                        let half_width = half_height * aspect;
+                        playground.half_size = Vec2::new(half_width, half_height);
                     }
                 }
             });

@@ -9,7 +9,7 @@ use crate::ui::theme::interaction::InteractionPalette;
 use crate::ui::theme::palette::*;
 use crate::ui::widgets::{
     CheckboxButton, CheckboxIcon, CheckboxRow, CheckboxSetting, ExportButton, FloatingPanel, HamburgerButton,
-    HeaderRow, ImportButton, PanelBody, PanelContainer,
+    HeaderRow, ImportButton, PanelBody, PanelContainer, PlaygroundSizeSlider, SliderHandle, SliderRow, SliderTrack,
 };
 
 use super::px;
@@ -132,6 +132,14 @@ pub fn spawn_floating_panel(commands: &mut Commands, icons: &UiIcons) {
 
                             spawn_icon_text_button(body, import_icon.clone(), BTN_IMPORT, ImportButton);
                             spawn_icon_text_button(body, export_icon.clone(), BTN_EXPORT, ExportButton);
+
+                            body.spawn(Node {
+                                flex_grow: 1.0,
+                                min_height: px(8.0),
+                                ..default()
+                            });
+
+                            spawn_slider_row(body, LABEL_PLAYGROUND_SIZE);
                         });
                 });
         });
@@ -243,5 +251,59 @@ fn spawn_icon_text_button<C: Component>(parent: &mut ChildSpawnerCommands, icon:
                 TextColor(TEXT),
                 Pickable::IGNORE,
             ));
+        });
+}
+
+/// Spawns a slider row with label for playground size control.
+fn spawn_slider_row(parent: &mut ChildSpawnerCommands, label_text: &str) {
+    parent
+        .spawn((
+            Name::new(format!("Slider Row: {}", label_text)),
+            SliderRow,
+            Node {
+                width: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4.0),
+                ..default()
+            },
+        ))
+        .with_children(|row| {
+            row.spawn((
+                Text::new(label_text),
+                TextFont::from_font_size(12.0),
+                TextColor(TEXT_SECONDARY),
+                Pickable::IGNORE,
+            ));
+
+            row.spawn((
+                Name::new("Slider Track"),
+                SliderTrack,
+                PlaygroundSizeSlider,
+                Button,
+                Node {
+                    width: px(176.0),
+                    height: px(8.0),
+                    border_radius: BorderRadius::all(px(4.0)),
+                    ..default()
+                },
+                BackgroundColor(SURFACE_PRESSED),
+            ))
+            .with_children(|track| {
+                track.spawn((
+                    Name::new("Slider Handle"),
+                    SliderHandle,
+                    PlaygroundSizeSlider,
+                    Node {
+                        width: px(16.0),
+                        height: px(16.0),
+                        position_type: PositionType::Absolute,
+                        top: px(-4.0),
+                        left: Val::Percent(50.0),
+                        border_radius: BorderRadius::all(px(8.0)),
+                        ..default()
+                    },
+                    BackgroundColor(ACCENT),
+                ));
+            });
         });
 }

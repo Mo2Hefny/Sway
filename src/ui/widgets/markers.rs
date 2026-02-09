@@ -47,6 +47,18 @@ pub struct ImportButton;
 #[derive(Component, Debug)]
 pub struct ExportButton;
 
+#[derive(Component, Debug)]
+pub struct SliderRow;
+
+#[derive(Component, Debug)]
+pub struct SliderTrack;
+
+#[derive(Component, Debug)]
+pub struct SliderHandle;
+
+#[derive(Component, Debug)]
+pub struct PlaygroundSizeSlider;
+
 // ============================================================================
 // INSPECTOR MARKERS
 // ============================================================================

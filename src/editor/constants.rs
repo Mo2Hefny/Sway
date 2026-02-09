@@ -84,3 +84,11 @@ pub const TARGET_MARKER_COLOR: Color = Color::srgba(0.5, 0.5, 0.5, 0.4);
 pub const DIRECTION_VECTOR_LENGTH: f32 = 40.0;
 pub const DIRECTION_VECTOR_THICKNESS: f32 = 2.0;
 pub const DIRECTION_VECTOR_COLOR: Color = Color::srgba(0.3, 0.8, 1.0, 0.6);
+
+// =============================================================================
+// Camera Constants
+// =============================================================================
+
+pub const ZOOM_MIN: f32 = 0.2;
+pub const ZOOM_MAX: f32 = 2.0;
+pub const ZOOM_SPEED: f32 = 0.1;
