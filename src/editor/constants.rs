@@ -73,3 +73,14 @@ pub const SKIN_COLOR_OPAQUE: Color = Color::srgba(0.45, 0.65, 0.85, 1.0);
 pub const OUTLINE_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
 pub const OUTLINE_THICKNESS: f32 = 2.0;
 pub const SPLINE_SAMPLES: usize = 8;
+
+// =============================================================================
+// Motion Constants
+// =============================================================================
+
+pub const TARGET_MARKER_SIZE: f32 = 10.0;
+pub const TARGET_MARKER_THICKNESS: f32 = 1.0;
+pub const TARGET_MARKER_COLOR: Color = Color::srgba(0.5, 0.5, 0.5, 0.4);
+pub const DIRECTION_VECTOR_LENGTH: f32 = 40.0;
+pub const DIRECTION_VECTOR_THICKNESS: f32 = 2.0;
+pub const DIRECTION_VECTOR_COLOR: Color = Color::srgba(0.3, 0.8, 1.0, 0.6);

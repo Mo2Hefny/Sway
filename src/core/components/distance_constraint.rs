@@ -13,21 +13,18 @@ pub struct DistanceConstraint {
 }
 
 impl DistanceConstraint {
-    /// Creates a constraint with `rest_length` clamped to valid range.
     pub fn new(node_a: Entity, node_b: Entity, rest_length: f32) -> Self {
         Self {
             node_a,
             node_b,
-            rest_length: rest_length.clamp(MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE),
+            rest_length: Self::clamp_rest_length(rest_length),
         }
     }
 
-    /// Returns true if this constraint connects the given entity.
     pub fn involves(&self, entity: Entity) -> bool {
         self.node_a == entity || self.node_b == entity
     }
 
-    /// Returns the other entity in this constraint, if `entity` is one end.
     pub fn other(&self, entity: Entity) -> Option<Entity> {
         if self.node_a == entity {
             Some(self.node_b)
@@ -36,5 +33,9 @@ impl DistanceConstraint {
         } else {
             None
         }
+    }
+    
+    fn clamp_rest_length(length: f32) -> f32 {
+        length.clamp(MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE)
     }
 }

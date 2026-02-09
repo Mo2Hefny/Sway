@@ -6,6 +6,7 @@ use bevy_egui::{egui, EguiContexts, EguiTextureHandle};
 
 use crate::core::{
     Node as SimNode, NodeType, DistanceConstraint, Playground,
+    AnchorMovementMode, ProceduralPathType,
     build_scene_data, spawn_scene_data, export_to_file, import_from_file,
 };
 use crate::core::constants::{MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE};
@@ -524,12 +525,81 @@ fn inspector_content_ui(
                     ui.add_space(8.0);
                     ui.separator();
                     ui.add_space(8.0);
-                    if ui.checkbox(&mut node.follow_target, "Follow Target").changed() {}
-                    if node.follow_target {
-                        ui.horizontal(|ui| {
-                            ui.label("Movement Speed");
-                            ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
-                        });
+                    
+                    // Movement Mode selector
+                    ui.horizontal(|ui| {
+                        ui.label("Movement Mode");
+                        egui::ComboBox::from_id_salt("movement_mode")
+                            .selected_text(node.movement_mode.name())
+                            .show_ui(ui, |ui| {
+                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::None, AnchorMovementMode::None.name()).clicked() {
+                                    node.movement_mode = AnchorMovementMode::None;
+                                }
+                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::FollowTarget, AnchorMovementMode::FollowTarget.name()).clicked() {
+                                    node.movement_mode = AnchorMovementMode::FollowTarget;
+                                }
+                                if ui.selectable_label(node.movement_mode == AnchorMovementMode::Procedural, AnchorMovementMode::Procedural.name()).clicked() {
+                                    node.movement_mode = AnchorMovementMode::Procedural;
+                                    // Initialize path center to current position when switching to procedural
+                                    if node.path_center == bevy::math::Vec2::ZERO {
+                                        node.path_center = node.position;
+                                    }
+                                }
+                            });
+                    });
+                    
+                    match node.movement_mode {
+                        AnchorMovementMode::None => {
+                            // Static anchor - no additional controls
+                        }
+                        AnchorMovementMode::FollowTarget => {
+                            ui.horizontal(|ui| {
+                                ui.label("Movement Speed");
+                                ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
+                            });
+                        }
+                        AnchorMovementMode::Procedural => {
+                            // Path Type selector
+                            ui.horizontal(|ui| {
+                                ui.label("Path Type");
+                                egui::ComboBox::from_id_salt("path_type")
+                                    .selected_text(match node.path_type {
+                                        ProceduralPathType::Circle => "Circle",
+                                        ProceduralPathType::Wave => "Wave",
+                                        ProceduralPathType::Wander => "Wander",
+                                    })
+                                    .show_ui(ui, |ui| {
+                                        if ui.selectable_label(node.path_type == ProceduralPathType::Circle, "Circle").clicked() {
+                                            node.path_type = ProceduralPathType::Circle;
+                                        }
+                                        if ui.selectable_label(node.path_type == ProceduralPathType::Wave, "Wave").clicked() {
+                                            node.path_type = ProceduralPathType::Wave;
+                                        }
+                                        if ui.selectable_label(node.path_type == ProceduralPathType::Wander, "Wander").clicked() {
+                                            node.path_type = ProceduralPathType::Wander;
+                                        }
+                                    });
+                            });
+                            
+                            ui.horizontal(|ui| {
+                                ui.label("Amplitude X");
+                                ui.add(egui::Slider::new(&mut node.path_amplitude.x, 10.0..=200.0));
+                            });
+                            
+                            ui.horizontal(|ui| {
+                                ui.label("Amplitude Y");
+                                ui.add(egui::Slider::new(&mut node.path_amplitude.y, 10.0..=200.0));
+                            });
+                            
+                            ui.horizontal(|ui| {
+                                ui.label("Movement Speed");
+                                ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
+                            });
+                            
+                            if ui.button("Set Center to Current Position").clicked() {
+                                node.path_center = node.position;
+                            }
+                        }
                     }
                 }
             });

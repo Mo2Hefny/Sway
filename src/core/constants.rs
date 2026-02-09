@@ -27,3 +27,20 @@ pub const CONSTRAINT_ITERATIONS: usize = 4;
 // =============================================================================
 
 pub const ANGLE_CONSTRAINT: f32 = std::f32::consts::FRAC_PI_8;
+
+// =============================================================================
+// Steering Constants
+// =============================================================================
+
+pub const STEERING_THRESHOLD: f32 = 0.001;
+pub const STEERING_STRENGTH: f32 = 0.15;
+pub const TARGET_SMOOTHING: f32 = 0.08;
+
+// =============================================================================
+// Collision Avoidance Constants
+// =============================================================================
+
+pub const MIN_TARGET_DISTANCE: f32 = 0.1;
+pub const MIN_COLLISION_DISTANCE: f32 = 0.01;
+pub const STUCK_DETECTION_THRESHOLD: f32 = 5.0;
+pub const NODE_AVOIDANCE_BUFFER: f32 = 30.0;

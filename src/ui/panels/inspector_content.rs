@@ -58,6 +58,7 @@ pub enum InspectorFieldKind {
     ConstraintLength(Entity),
     AccFnX,
     AccFnY,
+    CollisionDamping,
 }
 
 // ============================================================================
@@ -159,6 +160,10 @@ fn spawn_transform_page(commands: &mut Commands, content_entity: Entity, node: &
             pos_min_x, pos_max_x, pos_min_y, pos_max_y);
         spawn_number_field(parent, "Radius", node.radius, 
             InspectorFieldKind::Radius, RADIUS_MIN, RADIUS_MAX);
+
+        spawn_section_header(parent, "Physics");
+        spawn_number_field(parent, "Collision Damp", node.collision_damping,
+            InspectorFieldKind::CollisionDamping, 0.0, 1.0);
 
         spawn_section_header(parent, "Acceleration");
         spawn_function_input(parent, "X Axis", &node.acc_fn_x, InspectorFieldKind::AccFnX);
@@ -763,6 +768,7 @@ fn apply_field_value(
         InspectorFieldKind::AccelerationX => node.acceleration.x = value,
         InspectorFieldKind::AccelerationY => node.acceleration.y = value,
         InspectorFieldKind::Radius => node.radius = value,
+        InspectorFieldKind::CollisionDamping => node.collision_damping = value.clamp(0.0, 1.0),
         _ => {}
     }
 }
@@ -795,6 +801,7 @@ pub fn live_sync_inspector_values(
             InspectorFieldKind::AccelerationX => node.acceleration.x,
             InspectorFieldKind::AccelerationY => node.acceleration.y,
             InspectorFieldKind::Radius => node.radius,
+            InspectorFieldKind::CollisionDamping => node.collision_damping,
             _ => continue,
         };
 

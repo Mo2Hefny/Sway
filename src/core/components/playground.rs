@@ -25,23 +25,33 @@ impl Default for Playground {
 }
 
 impl Playground {
-    /// Outer edge of the border stroke (inside the margin).
     pub fn stroke_outer_min(&self) -> Vec2 {
-        -self.half_size + Vec2::splat(self.border_margin)
+        Self::calculate_outer_bound(-self.half_size, self.border_margin)
     }
 
-    /// Outer edge of the border stroke (inside the margin).
     pub fn stroke_outer_max(&self) -> Vec2 {
-        self.half_size - Vec2::splat(self.border_margin)
+        Self::calculate_outer_bound(self.half_size, -self.border_margin)
     }
 
-    /// Inner edge of the border stroke — the collision surface.
     pub fn inner_min(&self) -> Vec2 {
-        -self.half_size + Vec2::splat(self.border_margin + self.stroke_width)
+        Self::calculate_inner_bound(-self.half_size, self.border_margin, self.stroke_width)
     }
 
-    /// Inner edge of the border stroke — the collision surface.
     pub fn inner_max(&self) -> Vec2 {
-        self.half_size - Vec2::splat(self.border_margin + self.stroke_width)
+        Self::calculate_inner_bound(self.half_size, self.border_margin, self.stroke_width)
+    }
+
+    fn calculate_outer_bound(half_size: Vec2, margin_offset: f32) -> Vec2 {
+        half_size + Vec2::splat(margin_offset)
+    }
+
+    fn calculate_inner_bound(half_size: Vec2, margin: f32, stroke: f32) -> Vec2 {
+        let offset = margin + stroke;
+        if half_size.x < 0.0 || half_size.y < 0.0 {
+            half_size + Vec2::splat(offset)
+        } else {
+            half_size - Vec2::splat(offset)
+        }
     }
 }
+

@@ -8,9 +8,8 @@ pub mod visuals;
 use bevy::prelude::*;
 
 use crate::core::{
-    anchor_movement_system, constraint_solving_system,
-    verlet_integration_system, boundary_collision_system,
-    save_frame_start_system, Playground,
+    anchor_movement_system, collision_avoidance_system, constraint_solving_system,
+    verlet_integration_system, boundary_collision_system, Playground,
 };
 use tools::*;
 use visuals::*;
@@ -44,8 +43,8 @@ impl Plugin for EditorPlugin {
                 (handle_node_selection, handle_delete_selected, handle_add_node_tool, handle_add_edge_tool),
                 cancel_edge_creation,
                 render_constraint_preview,
-                save_frame_start_system,
                 anchor_movement_system,
+                collision_avoidance_system,
                 boundary_collision_system,
                 verlet_integration_system,
                 constraint_solving_system,

@@ -26,6 +26,14 @@ pub struct LookVector;
 #[derive(Component, Clone, Debug, Reflect)]
 pub struct EyeVisual;
 
+// Marker for the target position marker.
+#[derive(Component, Debug)]
+pub struct TargetMarker;
+
+// Marker for the direction vector.
+#[derive(Component, Debug)]
+pub struct DirectionVector;
+
 // =============================================================================
 // Selection Components
 // =============================================================================
