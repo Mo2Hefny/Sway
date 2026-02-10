@@ -61,6 +61,7 @@ fn move_toward_target(node: &mut Node) {
         return;
     }
 
+    node.chain_angle = direction.to_angle() + std::f32::consts::PI;
     let step_size = node.movement_speed.min(distance);
     let step = direction.normalize() * step_size;
 

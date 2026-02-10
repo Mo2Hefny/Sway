@@ -1,6 +1,7 @@
 //! Node component definition.
 
 use bevy::prelude::*;
+use crate::core::constants::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -67,6 +68,7 @@ pub struct Node {
     pub wander_direction: f32,
     pub target_position: Vec2,
     pub collision_damping: f32,
+    pub constant_acceleration: Vec2,
 }
 
 impl Default for Node {
@@ -88,6 +90,7 @@ impl Default for Node {
             wander_direction: 0.0,
             target_position: Vec2::ZERO,
             collision_damping: 0.5,
+            constant_acceleration: Vec2::ZERO,
         }
     }
 }
@@ -112,8 +115,12 @@ impl Node {
     }
 
     pub fn verlet_step(&mut self, dt: f32) {
-        let new_position = 2.0 * self.position - self.prev_position + self.acceleration * dt;
+        let velocity = self.position - self.prev_position;
+        let total_acceleration = self.acceleration + self.constant_acceleration;
+        let new_position = self.position + velocity * AIR_DAMPING + total_acceleration * dt * dt;
+
         self.prev_position = self.position;
         self.position = new_position;
+        self.acceleration = Vec2::ZERO;
     }
 }

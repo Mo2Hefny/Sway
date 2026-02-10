@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use crate::core::components::{Node, Playground};
+use crate::core::components::{Node, NodeType, Playground};
 use crate::ui::state::PlaybackState;
 
 pub fn verlet_integration_system(playback: Res<PlaybackState>, time: Res<Time>, mut nodes: Query<&mut Node>) {
@@ -13,7 +13,11 @@ pub fn verlet_integration_system(playback: Res<PlaybackState>, time: Res<Time>, 
     let dt = time.delta_secs();
 
     for mut node in nodes.iter_mut() {
-        node.verlet_step(dt);
+        if node.node_type == NodeType::Normal {
+            node.verlet_step(dt);
+        } else {
+            node.prev_position = node.position;
+        }
     }
 }
 

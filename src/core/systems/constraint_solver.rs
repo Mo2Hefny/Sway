@@ -257,8 +257,6 @@ fn resolve_chain(chain: &[ChainLink], nodes: &mut Query<&mut Node>) {
         None => return,
     };
 
-    set_root_chain_angle(chain[0].entity, prev_angle, nodes);
-
     for i in 1..chain.len() {
         let result = resolve_chain_link(&chain[i], &chain[i - 1], prev_pos, prev_angle, nodes);
 
@@ -276,12 +274,6 @@ fn initialize_chain_resolution(chain: &[ChainLink], nodes: &Query<&mut Node>) ->
     Some((initial_angle, first_pos))
 }
 
-fn set_root_chain_angle(entity: Entity, angle: f32, nodes: &mut Query<&mut Node>) {
-    if let Ok(mut root) = nodes.get_mut(entity) {
-        root.chain_angle = angle;
-    }
-}
-
 fn resolve_chain_link(
     link: &ChainLink,
     prev_link: &ChainLink,
@@ -289,11 +281,10 @@ fn resolve_chain_link(
     prev_angle: f32,
     nodes: &mut Query<&mut Node>,
 ) -> Option<(f32, Vec2)> {
-    let node = nodes.get(link.entity).ok()?;
-    let cur_pos = node.position;
-    let is_anchor = node.node_type == NodeType::Anchor;
-    let angle_constraint = node.angle_constraint;
-    drop(node);
+    let (cur_pos, is_anchor, angle_constraint) = {
+        let node = nodes.get(link.entity).ok()?;
+        (node.position, node.node_type == NodeType::Anchor, node.angle_constraint)
+    };
 
     if is_anchor {
         handle_anchor_in_chain(link.entity, cur_pos, prev_pos, nodes)
