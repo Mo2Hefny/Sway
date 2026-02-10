@@ -4,12 +4,14 @@ use bevy::mesh::Indices;
 use bevy::prelude::*;
 use bevy::render::render_resource::PrimitiveTopology;
 
-use crate::core::components::{DistanceConstraint, Node, NodeType};
+use crate::core::components::{Node, NodeType};
+use crate::core::resources::ConstraintGraph;
 use crate::editor::components::{SkinGroupIndex, SkinMesh, SkinOutline};
 use crate::editor::constants::*;
+use crate::editor::resources::SkinChains;
 use crate::ui::state::DisplaySettings;
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_6, PI};
 
 pub fn spawn_skin_visual(
@@ -43,12 +45,24 @@ pub fn spawn_skin_visual(
     ));
 }
 
+pub fn update_skin_chains(
+    graph: Res<ConstraintGraph>,
+    nodes: Query<&Node>,
+    mut skin_chains: ResMut<SkinChains>,
+) {
+    if !graph.is_changed() {
+        return;
+    }
+
+    skin_chains.chains = build_ordered_chains(&graph, &nodes);
+}
+
 pub fn sync_skin_visual(
     mut commands: Commands,
     display_settings: Res<DisplaySettings>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    constraints: Query<&DistanceConstraint>,
+    skin_chains: Res<SkinChains>,
     nodes: Query<&Node>,
     mut fill_query: Query<
         (Entity, &Mesh2d, &MeshMaterial2d<ColorMaterial>, &SkinGroupIndex, &mut Visibility),
@@ -63,9 +77,9 @@ pub fn sync_skin_visual(
     let opaque = !display_settings.show_nodes;
 
     let chains = if show {
-        build_ordered_chains(&constraints, &nodes)
+        &skin_chains.chains
     } else {
-        Vec::new()
+        &Vec::new()
     };
 
     let chain_count = chains.len();
@@ -173,25 +187,24 @@ pub fn sync_skin_visual(
 // Private Methods
 // =============================================================================
 
-fn build_ordered_chains(constraints: &Query<&DistanceConstraint>, nodes: &Query<&Node>) -> Vec<Vec<(Entity, f32)>> {
-    let adj = build_adjacency_map(constraints);
+fn build_ordered_chains(graph: &ConstraintGraph, nodes: &Query<&Node>) -> Vec<Vec<(Entity, f32)>> {
     let mut visited: HashMap<Entity, bool> = HashMap::new();
     let mut chains: Vec<Vec<(Entity, f32)>> = Vec::new();
-    let starts = find_chain_starts(&adj, nodes);
+    let starts = find_chain_starts(&graph.adjacency, nodes);
 
     for &start in &starts {
         if *visited.get(&start).unwrap_or(&false) {
             continue;
         }
 
-        let Some(neighbors) = adj.get(&start) else { continue };
+        let Some(neighbors) = graph.adjacency.get(&start) else { continue };
 
         for &(next, rest_len) in neighbors {
             if *visited.get(&next).unwrap_or(&false) {
                 continue;
             }
 
-            let chain = trace_chain(start, next, rest_len, &adj, &mut visited);
+            let chain = trace_chain(start, next, rest_len, &graph.adjacency, &mut visited);
             if chain.len() >= 2 {
                 chains.push(chain);
             }
@@ -201,20 +214,7 @@ fn build_ordered_chains(constraints: &Query<&DistanceConstraint>, nodes: &Query<
     chains
 }
 
-fn build_adjacency_map(constraints: &Query<&DistanceConstraint>) -> BTreeMap<Entity, Vec<(Entity, f32)>> {
-    let mut adj: BTreeMap<Entity, Vec<(Entity, f32)>> = BTreeMap::new();
-    for c in constraints.iter() {
-        adj.entry(c.node_a).or_default().push((c.node_b, c.rest_length));
-        adj.entry(c.node_b).or_default().push((c.node_a, c.rest_length));
-    }
-
-    for neighbors in adj.values_mut() {
-        neighbors.sort_by_key(|&(e, _)| e);
-    }
-    adj
-}
-
-fn find_chain_starts(adj: &BTreeMap<Entity, Vec<(Entity, f32)>>, nodes: &Query<&Node>) -> Vec<Entity> {
+fn find_chain_starts(adj: &HashMap<Entity, Vec<(Entity, f32)>>, nodes: &Query<&Node>) -> Vec<Entity> {
     let mut starts: Vec<Entity> = Vec::new();
     let mut leaves: Vec<Entity> = Vec::new();
 
@@ -241,7 +241,7 @@ fn trace_chain(
     start: Entity,
     first_next: Entity,
     first_rest: f32,
-    adj: &BTreeMap<Entity, Vec<(Entity, f32)>>,
+    adj: &HashMap<Entity, Vec<(Entity, f32)>>,
     visited: &mut HashMap<Entity, bool>,
 ) -> Vec<(Entity, f32)> {
     let mut chain: Vec<(Entity, f32)> = vec![(start, first_rest)];

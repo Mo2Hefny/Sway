@@ -1,18 +1,19 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
-use crate::core::components::{AnchorMovementMode, DistanceConstraint, Node, NodeType, Playground, ProceduralPathType};
+use crate::core::components::{AnchorMovementMode, Node, NodeType, Playground, ProceduralPathType};
 use crate::core::constants::*;
-use crate::core::utils::{find_connected_entities, get_mouse_world_position, normalize_angle};
+use crate::core::resources::ConstraintGraph;
+use crate::core::utils::{get_mouse_world_position, normalize_angle};
 use crate::ui::state::PlaybackState;
 
 pub fn anchor_movement_system(
     playback: Res<PlaybackState>,
     time: Res<Time>,
     playground: Res<Playground>,
+    graph: Res<ConstraintGraph>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     camera_query: Query<(&Camera, &GlobalTransform)>,
-    constraint_query: Query<&DistanceConstraint>,
     mut anchors: Query<(Entity, &mut Node)>,
 ) {
     if !playback.is_playing() {
@@ -23,8 +24,6 @@ pub fn anchor_movement_system(
     let mouse_world = get_mouse_world_position(&window_query, &camera_query);
 
     let all_nodes: Vec<(Entity, Vec2, f32)> = anchors.iter().map(|(e, n)| (e, n.position, n.radius)).collect();
-
-    let constraints: Vec<(Entity, Entity)> = constraint_query.iter().map(|c| (c.node_a, c.node_b)).collect();
 
     for (entity, mut node) in anchors.iter_mut() {
         if node.node_type != NodeType::Anchor {
@@ -42,7 +41,7 @@ pub fn anchor_movement_system(
                 }
             }
             AnchorMovementMode::Procedural => {
-                update_procedural_target(entity, &mut node, total_time, &playground, &all_nodes, &constraints);
+                update_procedural_target(entity, &mut node, total_time, &playground, &graph, &all_nodes);
                 move_toward_target(&mut node);
             }
         }
@@ -74,15 +73,15 @@ fn update_procedural_target(
     node: &mut Node,
     time: f32,
     playground: &Playground,
+    graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
-    constraints: &[(Entity, Entity)],
 ) {
     let t = time + node.path_phase;
 
     node.target_position = match node.path_type {
         ProceduralPathType::Circle => calculate_circle_target(node, t),
         ProceduralPathType::Wave => calculate_wave_target(node, t),
-        ProceduralPathType::Wander => calculate_wander_target(entity, node, t, playground, all_nodes, constraints),
+        ProceduralPathType::Wander => calculate_wander_target(entity, node, t, playground, graph, all_nodes),
     };
 }
 
@@ -103,8 +102,8 @@ fn calculate_wander_target(
     node: &mut Node,
     t: f32,
     playground: &Playground,
+    graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
-    constraints: &[(Entity, Entity)],
 ) -> Vec2 {
     let bounds = calculate_safe_bounds(playground, node.radius);
     let amplitude = node.path_amplitude.x;
@@ -114,7 +113,7 @@ fn calculate_wander_target(
     let wander_angle = calculate_wander_angle(node, t);
     let direction = Vec2::new(wander_angle.cos(), wander_angle.sin());
 
-    apply_lookahead_steering(entity, node, direction, amplitude, &bounds, all_nodes, constraints);
+    apply_lookahead_steering(entity, node, direction, amplitude, &bounds, graph, all_nodes);
 
     let mut new_target = calculate_new_target(node, t, amplitude);
 
@@ -147,11 +146,10 @@ fn apply_lookahead_steering(
     direction: Vec2,
     amplitude: f32,
     bounds: &SafeBounds,
+    graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
-    constraints: &[(Entity, Entity)],
 ) {
     let scan_distances = [amplitude * 2.5, amplitude * 2.0, amplitude * 1.5, amplitude];
-    let connected = find_connected_entities(entity, constraints);
     let wander_angle = node.wander_direction;
 
     for &scan_dist in &scan_distances {
@@ -171,7 +169,7 @@ fn apply_lookahead_steering(
             scan_point,
             node.radius,
             wander_angle,
-            &connected,
+            graph,
             all_nodes,
             base_strength,
         );
@@ -282,14 +280,15 @@ fn calculate_node_steering(
     scan_point: Vec2,
     self_radius: f32,
     current_angle: f32,
-    connected: &[Entity],
+    graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
     strength: f32,
 ) -> f32 {
     let mut steering = 0.0_f32;
+    let group = graph.get_group(self_entity);
 
     for (other_entity, other_pos, other_radius) in all_nodes {
-        if should_skip_node(*other_entity, self_entity, connected) {
+        if should_skip_node(*other_entity, self_entity, group, graph) {
             continue;
         }
 
@@ -309,8 +308,15 @@ fn calculate_node_steering(
     steering
 }
 
-fn should_skip_node(other_entity: Entity, self_entity: Entity, connected: &[Entity]) -> bool {
-    other_entity == self_entity || connected.contains(&other_entity)
+fn should_skip_node(other_entity: Entity, self_entity: Entity, my_group: Option<u32>, graph: &ConstraintGraph) -> bool {
+    if other_entity == self_entity {
+        return true;
+    }
+    
+    match (my_group, graph.get_group(other_entity)) {
+        (Some(g1), Some(g2)) => g1 == g2,
+        _ => false,
+    }
 }
 
 fn calculate_avoidance_steering(

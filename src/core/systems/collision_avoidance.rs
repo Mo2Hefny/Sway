@@ -1,50 +1,159 @@
 use bevy::prelude::*;
 
-use crate::core::components::{AnchorMovementMode, DistanceConstraint, Node, NodeType, Playground};
-use crate::core::constants::MIN_COLLISION_DISTANCE;
-use crate::core::utils::{find_connected_entities, get_constraint_neighbor};
+use crate::core::components::{Node, Playground, CellEntry};
+use crate::core::constants::{CELL_SIZE, MIN_COLLISION_DISTANCE};
+use crate::core::resources::ConstraintGraph;
 use crate::ui::state::PlaybackState;
+
+#[derive(Debug, Clone, Copy)]
+struct Collider {
+    entity: Entity,
+    position: Vec2,
+    radius: f32,
+    group: Option<u32>,
+}
 
 pub fn collision_avoidance_system(
     playback: Res<PlaybackState>,
     playground: Res<Playground>,
-    constraint_query: Query<&DistanceConstraint>,
+    graph: Res<ConstraintGraph>,
     mut nodes: Query<(Entity, &mut Node)>,
 ) {
     if !playback.is_playing() {
         return;
     }
 
-    let inner_min = playground.inner_min();
-    let inner_max = playground.inner_max();
+    let mut colliders = collect_colliders(&mut nodes, &playground, &graph);
+    let mut grid_entries = generate_grid_entries(&colliders);
+    
+    grid_entries.sort_unstable();
 
-    let constraints: Vec<(Entity, Entity)> = constraint_query.iter().map(|c| (c.node_a, c.node_b)).collect();
+    let mut potential_pairs = find_potential_pairs(&grid_entries);
+    
+    potential_pairs.sort_unstable();
+    potential_pairs.dedup();
 
-    let node_data: Vec<(Entity, Vec2, f32, f32)> = nodes
-        .iter()
-        .map(|(e, n)| (e, n.position, n.radius, n.collision_damping))
-        .collect();
-
-    for (entity, mut node) in nodes.iter_mut() {
-        let is_procedural_anchor = is_procedural_anchor_node(&node);
-
-        apply_boundary_collision(&mut node, inner_min, inner_max, is_procedural_anchor);
-
-        if is_procedural_anchor {
-            apply_node_collision(entity, &mut node, &node_data, &constraints);
-        }
-    }
+    resolve_collisions(&mut colliders, &potential_pairs);
+    apply_updates(&mut nodes, &colliders);
 }
 
 // =============================================================================
 // Private Methods
 // =============================================================================
 
-fn is_procedural_anchor_node(node: &Node) -> bool {
-    node.node_type == NodeType::Anchor && node.movement_mode == AnchorMovementMode::Procedural
+fn collect_colliders(
+    nodes: &mut Query<(Entity, &mut Node)>,
+    playground: &Playground,
+    graph: &ConstraintGraph,
+) -> Vec<Collider> {
+    let inner_min = playground.inner_min();
+    let inner_max = playground.inner_max();
+    let mut colliders = Vec::with_capacity(nodes.iter().len());
+
+    for (entity, mut node) in nodes.iter_mut() {
+        apply_boundary_collision(&mut node, inner_min, inner_max);
+
+        colliders.push(Collider {
+            entity,
+            position: node.position,
+            radius: node.radius,
+            group: graph.get_group(entity),
+        });
+    }
+    colliders
 }
 
-fn apply_boundary_collision(node: &mut Node, inner_min: Vec2, inner_max: Vec2, is_procedural_anchor: bool) {
+fn generate_grid_entries(colliders: &[Collider]) -> Vec<CellEntry> {
+    let mut grid_entries = Vec::with_capacity(colliders.len() * 4);
+
+    for (index, collider) in colliders.iter().enumerate() {
+        let min_x = ((collider.position.x - collider.radius) / CELL_SIZE).floor() as i32;
+        let max_x = ((collider.position.x + collider.radius) / CELL_SIZE).floor() as i32;
+        let min_y = ((collider.position.y - collider.radius) / CELL_SIZE).floor() as i32;
+        let max_y = ((collider.position.y + collider.radius) / CELL_SIZE).floor() as i32;
+
+        for x in min_x..=max_x {
+            for y in min_y..=max_y {
+                grid_entries.push(CellEntry {
+                    cell_x: x,
+                    cell_y: y,
+                    collider_index: index,
+                });
+            }
+        }
+    }
+    grid_entries
+}
+
+fn find_potential_pairs(grid_entries: &[CellEntry]) -> Vec<(usize, usize)> {
+    let mut potential_pairs = Vec::with_capacity(grid_entries.len());
+    let mut start_index = 0;
+
+    while start_index < grid_entries.len() {
+        let end_index = grid_entries[start_index..].iter()
+            .take_while(|e| e.cell_x == grid_entries[start_index].cell_x && e.cell_y == grid_entries[start_index].cell_y)
+            .count() + start_index;
+
+        for i in start_index..end_index {
+            for j in (i + 1)..end_index {
+                let idx_a = grid_entries[i].collider_index;
+                let idx_b = grid_entries[j].collider_index;
+
+                let (first, second) = if idx_a < idx_b {
+                    (idx_a, idx_b)
+                } else {
+                    (idx_b, idx_a)
+                };
+                
+                potential_pairs.push((first, second));
+            }
+        }
+        
+        start_index = end_index;
+    }
+    
+    potential_pairs
+}
+
+fn resolve_collisions(colliders: &mut [Collider], potential_pairs: &[(usize, usize)]) {
+    let iterations = 4;
+    
+    for _ in 0..iterations {
+        let mut any_correction = false;
+        
+        for &(idx_a, idx_b) in potential_pairs {
+            let (part1, part2) = colliders.split_at_mut(idx_b);
+            let col_a = &mut part1[idx_a];
+            let col_b = &mut part2[0];
+
+            if let (Some(g1), Some(g2)) = (col_a.group, col_b.group) {
+                if g1 == g2 {
+                    continue;
+                }
+            }
+
+            if let Some(push) = calculate_collision_push(col_a.position, col_a.radius, col_b.position, col_b.radius) {
+                col_a.position += push;
+                col_b.position -= push;
+                any_correction = true;
+            }
+        }
+        
+        if !any_correction {
+            break;
+        }
+    }
+}
+
+fn apply_updates(nodes: &mut Query<(Entity, &mut Node)>, colliders: &[Collider]) {
+    for collider in colliders {
+        if let Ok((_, mut node)) = nodes.get_mut(collider.entity) {
+             node.position = collider.position;
+        }
+    }
+}
+
+fn apply_boundary_collision(node: &mut Node, inner_min: Vec2, inner_max: Vec2) {
     let r = node.radius;
     let mut hit_boundary = false;
 
@@ -64,19 +173,9 @@ fn apply_boundary_collision(node: &mut Node, inner_min: Vec2, inner_max: Vec2, i
         hit_boundary = true;
     }
 
-    if !hit_boundary {
-        return;
-    }
-
-    if is_procedural_anchor {
-        sync_prev_position_to_current(node);
-    } else {
+    if hit_boundary {
         apply_verlet_bounce(node, inner_min, inner_max, r);
     }
-}
-
-fn sync_prev_position_to_current(node: &mut Node) {
-    node.prev_position = node.position;
 }
 
 fn apply_verlet_bounce(node: &mut Node, inner_min: Vec2, inner_max: Vec2, radius: f32) {
@@ -94,38 +193,16 @@ fn apply_verlet_bounce(node: &mut Node, inner_min: Vec2, inner_max: Vec2, radius
     node.prev_position = node.position - new_velocity;
 }
 
-fn apply_node_collision(
-    entity: Entity,
-    node: &mut Node,
-    node_data: &[(Entity, Vec2, f32, f32)],
-    constraints: &[(Entity, Entity)],
-) {
-    let connected = find_connected_entities(entity, constraints);
-
-    for (other_entity, other_pos, other_radius, _) in node_data {
-        if should_skip_collision(*other_entity, entity, &connected) {
-            continue;
-        }
-
-        if let Some(push) = calculate_collision_push(node.position, node.radius, *other_pos, *other_radius) {
-            node.position += push;
-            sync_prev_position_to_current(node);
-        }
-    }
-}
-
-fn should_skip_collision(other_entity: Entity, self_entity: Entity, connected: &[Entity]) -> bool {
-    other_entity == self_entity || connected.contains(&other_entity)
-}
-
 fn calculate_collision_push(pos: Vec2, radius: f32, other_pos: Vec2, other_radius: f32) -> Option<Vec2> {
     let delta = pos - other_pos;
-    let distance = delta.length();
+    let distance_sq = delta.length_squared();
     let min_distance = radius + other_radius;
+    let min_distance_sq = min_distance * min_distance;
 
-    if distance < min_distance && distance > MIN_COLLISION_DISTANCE {
+    if distance_sq < min_distance_sq && distance_sq > MIN_COLLISION_DISTANCE * MIN_COLLISION_DISTANCE {
+        let distance = distance_sq.sqrt();
         let overlap = min_distance - distance;
-        let separation_dir = delta.normalize_or_zero();
+        let separation_dir = delta / distance;
         Some(separation_dir * overlap * 0.5)
     } else {
         None

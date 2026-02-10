@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::components::{DistanceConstraint, Node, NodeType};
+use super::components::{DistanceConstraint, Node};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstraintData {

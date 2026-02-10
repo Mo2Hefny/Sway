@@ -6,10 +6,12 @@ use std::collections::HashMap;
 use crate::core::components::{DistanceConstraint, Node, NodeType};
 use crate::core::constants::*;
 use crate::core::utils::normalize_angle_to_positive;
+use crate::core::resources::ConstraintGraph;
 use crate::ui::state::PlaybackState;
 
 pub fn constraint_solving_system(
     playback: Res<PlaybackState>,
+    graph: Res<ConstraintGraph>,
     constraint_query: Query<&DistanceConstraint>,
     mut nodes: Query<&mut Node>,
 ) {
@@ -22,7 +24,7 @@ pub fn constraint_solving_system(
         return;
     }
 
-    let (chains, standalone) = build_chains(&constraints, &nodes);
+    let (chains, standalone) = build_chains(&graph, &constraints, &nodes);
 
     for chain in &chains {
         resolve_chain(chain, &mut nodes);
@@ -45,14 +47,15 @@ struct ChainLink {
 }
 
 fn build_chains(
+    graph: &ConstraintGraph,
     constraints: &[&DistanceConstraint],
     nodes: &Query<&mut Node>,
 ) -> (Vec<Vec<ChainLink>>, Vec<DistanceConstraint>) {
-    let adj = build_adjacency_list(constraints);
+    let adj = &graph.adjacency;
     let mut visited: HashMap<Entity, bool> = HashMap::new();
     let mut chains: Vec<Vec<ChainLink>> = Vec::new();
 
-    let starts = find_chain_starts(&adj, nodes);
+    let starts = find_chain_starts(adj, nodes);
 
     for &start in &starts {
         if is_visited(&visited, start) {
@@ -65,7 +68,7 @@ fn build_chains(
                 continue;
             }
 
-            if let Some(chain) = build_chain_from_endpoint(start, next, rest_len, &adj, &mut visited) {
+            if let Some(chain) = build_chain_from_endpoint(start, next, rest_len, adj, &mut visited) {
                 if chain.len() >= 2 {
                     chains.push(chain);
                 }
@@ -73,20 +76,11 @@ fn build_chains(
         }
     }
 
-    collect_cycles(&adj, &mut visited, &mut chains);
+    collect_cycles(adj, &mut visited, &mut chains);
 
     let standalone = find_standalone_constraints(constraints, &visited);
 
     (chains, standalone)
-}
-
-fn build_adjacency_list(constraints: &[&DistanceConstraint]) -> HashMap<Entity, Vec<(Entity, f32)>> {
-    let mut adj: HashMap<Entity, Vec<(Entity, f32)>> = HashMap::new();
-    for c in constraints {
-        adj.entry(c.node_a).or_default().push((c.node_b, c.rest_length));
-        adj.entry(c.node_b).or_default().push((c.node_a, c.rest_length));
-    }
-    adj
 }
 
 fn find_chain_starts(adj: &HashMap<Entity, Vec<(Entity, f32)>>, nodes: &Query<&mut Node>) -> Vec<Entity> {

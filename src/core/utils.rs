@@ -3,34 +3,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 
-pub fn find_connected_entities(entity: Entity, constraints: &[(Entity, Entity)]) -> Vec<Entity> {
-    let mut connected = vec![entity];
-    let mut to_check = vec![entity];
-
-    while let Some(current) = to_check.pop() {
-        for (a, b) in constraints {
-            if let Some(neighbor) = get_constraint_neighbor(current, *a, *b) {
-                if !connected.contains(&neighbor) {
-                    connected.push(neighbor);
-                    to_check.push(neighbor);
-                }
-            }
-        }
-    }
-
-    connected
-}
-
-pub fn get_constraint_neighbor(current: Entity, a: Entity, b: Entity) -> Option<Entity> {
-    if a == current {
-        Some(b)
-    } else if b == current {
-        Some(a)
-    } else {
-        None
-    }
-}
-
 pub fn normalize_angle(angle: f32) -> f32 {
     let two_pi = std::f32::consts::TAU;
     let normalized = angle % two_pi;

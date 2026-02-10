@@ -4,6 +4,7 @@
 // Playground Constants
 // =============================================================================
 
+pub const CELL_SIZE: f32 = 20.0;
 pub const BORDER_MARGIN: f32 = 10.0;
 pub const STROKE_WIDTH: f32 = 2.0;
 pub const IMPACT_DAMPING: f32 = 0.5;

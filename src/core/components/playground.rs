@@ -54,3 +54,31 @@ impl Playground {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct CellEntry {
+    pub cell_x: i32,
+    pub cell_y: i32,
+    pub collider_index: usize,
+}
+
+impl PartialEq for CellEntry {
+    fn eq(&self, other: &Self) -> bool {
+        self.cell_x == other.cell_x && self.cell_y == other.cell_y
+    }
+}
+
+impl Eq for CellEntry {}
+
+impl PartialOrd for CellEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for CellEntry {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.cell_x.cmp(&other.cell_x)
+            .then_with(|| self.cell_y.cmp(&other.cell_y))
+    }
+}

@@ -92,7 +92,7 @@ pub const SKIN_PALETTE_OPAQUE: [Color; 8] = [
 
 pub const OUTLINE_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
 pub const OUTLINE_THICKNESS: f32 = 2.0;
-pub const SPLINE_SAMPLES: usize = 8;
+pub const SPLINE_SAMPLES: usize = 4;
 pub const MIN_SPLINE_POINT_DISTANCE: f32 = 1.0;
 pub const MITER_LIMIT: f32 = 2.0;
 
