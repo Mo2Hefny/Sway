@@ -68,11 +68,33 @@ pub const CONSTRAINT_GAP_LENGTH: f32 = 4.0;
 // Skin Constants
 // =============================================================================
 
-pub const SKIN_COLOR: Color = Color::srgba(0.45, 0.65, 0.85, 0.5);
-pub const SKIN_COLOR_OPAQUE: Color = Color::srgba(0.45, 0.65, 0.85, 1.0);
+pub const SKIN_PALETTE: [Color; 8] = [
+    Color::srgba(0.45, 0.65, 0.85, 0.5),
+    Color::srgba(0.85, 0.45, 0.55, 0.5),
+    Color::srgba(0.45, 0.85, 0.60, 0.5),
+    Color::srgba(0.80, 0.70, 0.40, 0.5),
+    Color::srgba(0.65, 0.45, 0.85, 0.5),
+    Color::srgba(0.85, 0.60, 0.40, 0.5),
+    Color::srgba(0.40, 0.75, 0.80, 0.5),
+    Color::srgba(0.75, 0.55, 0.70, 0.5),
+];
+
+pub const SKIN_PALETTE_OPAQUE: [Color; 8] = [
+    Color::srgba(0.45, 0.65, 0.85, 1.0),
+    Color::srgba(0.85, 0.45, 0.55, 1.0),
+    Color::srgba(0.45, 0.85, 0.60, 1.0),
+    Color::srgba(0.80, 0.70, 0.40, 1.0),
+    Color::srgba(0.65, 0.45, 0.85, 1.0),
+    Color::srgba(0.85, 0.60, 0.40, 1.0),
+    Color::srgba(0.40, 0.75, 0.80, 1.0),
+    Color::srgba(0.75, 0.55, 0.70, 1.0),
+];
+
 pub const OUTLINE_COLOR: Color = Color::srgb(1.0, 1.0, 1.0);
 pub const OUTLINE_THICKNESS: f32 = 2.0;
 pub const SPLINE_SAMPLES: usize = 8;
+pub const MIN_SPLINE_POINT_DISTANCE: f32 = 1.0;
+pub const MITER_LIMIT: f32 = 2.0;
 
 // =============================================================================
 // Motion Constants
@@ -89,6 +111,6 @@ pub const DIRECTION_VECTOR_COLOR: Color = Color::srgba(0.3, 0.8, 1.0, 0.6);
 // Camera Constants
 // =============================================================================
 
-pub const ZOOM_MIN: f32 = 0.2;
+pub const ZOOM_MIN: f32 = 0.05;
 pub const ZOOM_MAX: f32 = 2.0;
 pub const ZOOM_SPEED: f32 = 0.1;

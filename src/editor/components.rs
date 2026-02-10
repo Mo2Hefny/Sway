@@ -89,3 +89,7 @@ pub struct SkinMesh;
 /// Marker for the skin outline stroke.
 #[derive(Component, Debug)]
 pub struct SkinOutline;
+
+/// Tracks which chain group a skin entity belongs to.
+#[derive(Component, Debug)]
+pub struct SkinGroupIndex(pub usize);
