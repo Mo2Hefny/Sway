@@ -41,7 +41,8 @@ pub fn anchor_movement_system(
                 }
             }
             AnchorMovementMode::Procedural => {
-                update_procedural_target(entity, &mut node, total_time, &playground, &graph, &all_nodes);
+                let dt = time.delta_secs();
+                update_procedural_target(entity, &mut node, total_time, dt, &playground, &graph, &all_nodes);
                 move_toward_target(&mut node);
             }
         }
@@ -72,6 +73,7 @@ fn update_procedural_target(
     entity: Entity,
     node: &mut Node,
     time: f32,
+    dt: f32,
     playground: &Playground,
     graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
@@ -81,7 +83,7 @@ fn update_procedural_target(
     node.target_position = match node.path_type {
         ProceduralPathType::Circle => calculate_circle_target(node, t),
         ProceduralPathType::Wave => calculate_wave_target(node, t),
-        ProceduralPathType::Wander => calculate_wander_target(entity, node, t, playground, graph, all_nodes),
+        ProceduralPathType::Wander => calculate_wander_target(entity, node, t, dt, playground, graph, all_nodes),
     };
 }
 
@@ -101,6 +103,7 @@ fn calculate_wander_target(
     entity: Entity,
     node: &mut Node,
     t: f32,
+    dt: f32,
     playground: &Playground,
     graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
@@ -113,12 +116,12 @@ fn calculate_wander_target(
     let wander_angle = calculate_wander_angle(node, t);
     let direction = Vec2::new(wander_angle.cos(), wander_angle.sin());
 
-    apply_lookahead_steering(entity, node, direction, amplitude, &bounds, graph, all_nodes);
+    apply_lookahead_steering(entity, node, direction, amplitude, dt, &bounds, graph, all_nodes);
 
     let mut new_target = calculate_new_target(node, t, amplitude);
 
-    handle_boundary_cases(node, &mut new_target, &bounds, t);
-    handle_stuck_detection(node, &new_target);
+    handle_boundary_cases(node, &mut new_target, &bounds, dt);
+    handle_stuck_detection(node, &new_target, dt);
 
     smooth_target_position(node, new_target)
 }
@@ -145,22 +148,35 @@ fn apply_lookahead_steering(
     node: &mut Node,
     direction: Vec2,
     amplitude: f32,
+    dt: f32,
     bounds: &SafeBounds,
     graph: &ConstraintGraph,
     all_nodes: &[(Entity, Vec2, f32)],
 ) {
-    let scan_distances = [amplitude * 2.5, amplitude * 2.0, amplitude * 1.5, amplitude];
+    let speed_lookahead = node.movement_speed * LOOKAHEAD_WINDOW;
+    let base_lookahead = amplitude;
+    
+    let scan_distances = [
+        base_lookahead + speed_lookahead * 1.5,
+        base_lookahead + speed_lookahead * 1.0, 
+        base_lookahead + speed_lookahead * 0.5,
+        base_lookahead,
+        node.radius * 3.0,
+        node.radius * 1.5,
+    ];
+    
     let wander_angle = node.wander_direction;
+    let mut total_steering = 0.0_f32;
 
     for &scan_dist in &scan_distances {
         let scan_point = node.position + direction * scan_dist;
-        let distance_factor = scan_dist / amplitude;
+        let distance_factor = (scan_dist / base_lookahead).max(1.0);
         let base_strength = STEERING_STRENGTH / distance_factor;
 
         let boundary_steering = calculate_boundary_steering(scan_point, bounds, wander_angle, base_strength);
-
+        
         if boundary_steering.abs() > STEERING_THRESHOLD {
-            node.wander_direction += boundary_steering;
+            total_steering += boundary_steering;
         }
 
         let node_steering = calculate_node_steering(
@@ -175,8 +191,14 @@ fn apply_lookahead_steering(
         );
 
         if node_steering.abs() > STEERING_THRESHOLD {
-            node.wander_direction += node_steering;
+            total_steering += node_steering;
         }
+    }
+
+    if total_steering.abs() > STEERING_THRESHOLD {
+        let steer_amount = total_steering.clamp(-std::f32::consts::PI, std::f32::consts::PI);
+        node.wander_direction += steer_amount * STEERING_RESPONSIVENESS * dt;
+        node.wander_direction = normalize_angle(node.wander_direction);
     }
 }
 
@@ -187,16 +209,16 @@ fn calculate_new_target(node: &Node, t: f32, amplitude: f32) -> Vec2 {
     node.position + offset
 }
 
-fn handle_boundary_cases(node: &mut Node, new_target: &mut Vec2, bounds: &SafeBounds, t: f32) {
+fn handle_boundary_cases(node: &mut Node, new_target: &mut Vec2, bounds: &SafeBounds, dt: f32) {
     let out_left = new_target.x < bounds.min.x;
     let out_right = new_target.x > bounds.max.x;
     let out_bottom = new_target.y < bounds.min.y;
     let out_top = new_target.y > bounds.max.y;
 
     if is_in_corner(out_left, out_right, out_bottom, out_top) {
-        flip_direction_at_corner(node, new_target, bounds, t);
+        flip_direction_at_corner(node, new_target, bounds, dt);
     } else {
-        handle_single_axis_boundary(node, new_target, bounds, out_left, out_right, out_bottom, out_top);
+        handle_single_axis_boundary(node, new_target, bounds, out_left, out_right, out_bottom, out_top, dt);
     }
 }
 
@@ -204,12 +226,11 @@ fn is_in_corner(out_left: bool, out_right: bool, out_bottom: bool, out_top: bool
     (out_left || out_right) && (out_bottom || out_top)
 }
 
-fn flip_direction_at_corner(node: &mut Node, new_target: &mut Vec2, bounds: &SafeBounds, t: f32) {
-    node.wander_direction += std::f32::consts::PI + (t * 7.3).sin() * 0.3;
+fn flip_direction_at_corner(node: &mut Node, new_target: &mut Vec2, bounds: &SafeBounds, dt: f32) {
+    node.wander_direction += STUCK_TURN_SPEED * dt;
     node.wander_direction = normalize_angle(node.wander_direction);
 
-    let angle_variation = (t * 0.7).sin() * 0.15 + (t * 1.3).sin() * 0.08;
-    let new_angle = node.wander_direction + angle_variation;
+    let new_angle = node.wander_direction;
     let amplitude = new_target.distance(node.position);
     let new_offset = Vec2::new(new_angle.cos(), new_angle.sin()) * amplitude;
     *new_target = node.position + new_offset;
@@ -225,28 +246,32 @@ fn handle_single_axis_boundary(
     out_right: bool,
     out_bottom: bool,
     out_top: bool,
+    dt: f32,
 ) {
+    let turn_amount = STUCK_TURN_SPEED * dt;
+
     if out_left {
         new_target.x = bounds.min.x;
-        node.wander_direction = steer_smoothly(node.wander_direction, 0.0, 0.1);
+        node.wander_direction = steer_smoothly(node.wander_direction, 0.0, turn_amount);
     } else if out_right {
         new_target.x = bounds.max.x;
-        node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::PI, 0.1);
+        node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::PI, turn_amount);
     }
 
     if out_bottom {
         new_target.y = bounds.min.y;
-        node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::FRAC_PI_2, 0.1);
+        node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::FRAC_PI_2, turn_amount);
     } else if out_top {
         new_target.y = bounds.max.y;
-        node.wander_direction = steer_smoothly(node.wander_direction, -std::f32::consts::FRAC_PI_2, 0.1);
+        node.wander_direction = steer_smoothly(node.wander_direction, -std::f32::consts::FRAC_PI_2, turn_amount);
     }
 }
 
-fn handle_stuck_detection(node: &mut Node, new_target: &Vec2) {
+fn handle_stuck_detection(node: &mut Node, new_target: &Vec2, dt: f32) {
     let distance_to_target = (node.position - *new_target).length();
+    
     if distance_to_target < STUCK_DETECTION_THRESHOLD {
-        node.wander_direction += std::f32::consts::PI;
+        node.wander_direction += STUCK_TURN_SPEED * dt;
         node.wander_direction = normalize_angle(node.wander_direction);
     }
 }
