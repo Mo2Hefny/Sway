@@ -6,7 +6,7 @@ use crate::core::components::DistanceConstraint;
 #[derive(Resource, Default)]
 pub struct ConstraintGraph {
     pub adjacency: HashMap<Entity, Vec<(Entity, f32)>>,
-    pub node_groups: HashMap<Entity, u32>
+    pub node_groups: HashMap<Entity, u32>,
 }
 
 impl ConstraintGraph {
@@ -22,8 +22,14 @@ impl ConstraintGraph {
         self.node_groups.clear();
 
         for constraint in constraints {
-            self.adjacency.entry(constraint.node_a).or_insert_with(Vec::new).push((constraint.node_b, constraint.rest_length));
-            self.adjacency.entry(constraint.node_b).or_insert_with(Vec::new).push((constraint.node_a, constraint.rest_length));
+            self.adjacency
+                .entry(constraint.node_a)
+                .or_insert_with(Vec::new)
+                .push((constraint.node_b, constraint.rest_length));
+            self.adjacency
+                .entry(constraint.node_b)
+                .or_insert_with(Vec::new)
+                .push((constraint.node_a, constraint.rest_length));
         }
 
         let mut stack = Vec::new();

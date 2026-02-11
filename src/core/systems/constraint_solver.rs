@@ -5,8 +5,8 @@ use std::collections::HashMap;
 
 use crate::core::components::{DistanceConstraint, Node, NodeType};
 use crate::core::constants::*;
-use crate::core::utils::normalize_angle_to_positive;
 use crate::core::resources::ConstraintGraph;
+use crate::core::utils::normalize_angle_to_positive;
 use crate::ui::state::PlaybackState;
 
 pub fn constraint_solving_system(

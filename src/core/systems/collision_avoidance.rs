@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::core::components::{Node, Playground, CellEntry};
+use crate::core::components::{CellEntry, Node, Playground};
 use crate::core::constants::{CELL_SIZE, MIN_COLLISION_DISTANCE};
 use crate::core::resources::ConstraintGraph;
 use crate::ui::state::PlaybackState;
@@ -25,11 +25,11 @@ pub fn collision_avoidance_system(
 
     let mut colliders = collect_colliders(&mut nodes, &playground, &graph);
     let mut grid_entries = generate_grid_entries(&colliders);
-    
+
     grid_entries.sort_unstable();
 
     let mut potential_pairs = find_potential_pairs(&grid_entries);
-    
+
     potential_pairs.sort_unstable();
     potential_pairs.dedup();
 
@@ -90,37 +90,37 @@ fn find_potential_pairs(grid_entries: &[CellEntry]) -> Vec<(usize, usize)> {
     let mut start_index = 0;
 
     while start_index < grid_entries.len() {
-        let end_index = grid_entries[start_index..].iter()
-            .take_while(|e| e.cell_x == grid_entries[start_index].cell_x && e.cell_y == grid_entries[start_index].cell_y)
-            .count() + start_index;
+        let end_index = grid_entries[start_index..]
+            .iter()
+            .take_while(|e| {
+                e.cell_x == grid_entries[start_index].cell_x && e.cell_y == grid_entries[start_index].cell_y
+            })
+            .count()
+            + start_index;
 
         for i in start_index..end_index {
             for j in (i + 1)..end_index {
                 let idx_a = grid_entries[i].collider_index;
                 let idx_b = grid_entries[j].collider_index;
 
-                let (first, second) = if idx_a < idx_b {
-                    (idx_a, idx_b)
-                } else {
-                    (idx_b, idx_a)
-                };
-                
+                let (first, second) = if idx_a < idx_b { (idx_a, idx_b) } else { (idx_b, idx_a) };
+
                 potential_pairs.push((first, second));
             }
         }
-        
+
         start_index = end_index;
     }
-    
+
     potential_pairs
 }
 
 fn resolve_collisions(colliders: &mut [Collider], potential_pairs: &[(usize, usize)]) {
     let iterations = 4;
-    
+
     for _ in 0..iterations {
         let mut any_correction = false;
-        
+
         for &(idx_a, idx_b) in potential_pairs {
             let (part1, part2) = colliders.split_at_mut(idx_b);
             let col_a = &mut part1[idx_a];
@@ -138,7 +138,7 @@ fn resolve_collisions(colliders: &mut [Collider], potential_pairs: &[(usize, usi
                 any_correction = true;
             }
         }
-        
+
         if !any_correction {
             break;
         }
@@ -148,7 +148,7 @@ fn resolve_collisions(colliders: &mut [Collider], potential_pairs: &[(usize, usi
 fn apply_updates(nodes: &mut Query<(Entity, &mut Node)>, colliders: &[Collider]) {
     for collider in colliders {
         if let Ok((_, mut node)) = nodes.get_mut(collider.entity) {
-             node.position = collider.position;
+            node.position = collider.position;
         }
     }
 }

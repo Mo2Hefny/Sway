@@ -155,16 +155,16 @@ fn apply_lookahead_steering(
 ) {
     let speed_lookahead = node.movement_speed * LOOKAHEAD_WINDOW;
     let base_lookahead = amplitude;
-    
+
     let scan_distances = [
         base_lookahead + speed_lookahead * 1.5,
-        base_lookahead + speed_lookahead * 1.0, 
+        base_lookahead + speed_lookahead * 1.0,
         base_lookahead + speed_lookahead * 0.5,
         base_lookahead,
         node.radius * 3.0,
         node.radius * 1.5,
     ];
-    
+
     let wander_angle = node.wander_direction;
     let mut total_steering = 0.0_f32;
 
@@ -174,7 +174,7 @@ fn apply_lookahead_steering(
         let base_strength = STEERING_STRENGTH / distance_factor;
 
         let boundary_steering = calculate_boundary_steering(scan_point, bounds, wander_angle, base_strength);
-        
+
         if boundary_steering.abs() > STEERING_THRESHOLD {
             total_steering += boundary_steering;
         }
@@ -269,7 +269,7 @@ fn handle_single_axis_boundary(
 
 fn handle_stuck_detection(node: &mut Node, new_target: &Vec2, dt: f32) {
     let distance_to_target = (node.position - *new_target).length();
-    
+
     if distance_to_target < STUCK_DETECTION_THRESHOLD {
         node.wander_direction += STUCK_TURN_SPEED * dt;
         node.wander_direction = normalize_angle(node.wander_direction);
@@ -337,7 +337,7 @@ fn should_skip_node(other_entity: Entity, self_entity: Entity, my_group: Option<
     if other_entity == self_entity {
         return true;
     }
-    
+
     match (my_group, graph.get_group(other_entity)) {
         (Some(g1), Some(g2)) => g1 == g2,
         _ => false,

@@ -78,7 +78,8 @@ impl PartialOrd for CellEntry {
 
 impl Ord for CellEntry {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.cell_x.cmp(&other.cell_x)
+        self.cell_x
+            .cmp(&other.cell_x)
             .then_with(|| self.cell_y.cmp(&other.cell_y))
     }
 }

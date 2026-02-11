@@ -1,7 +1,7 @@
 //! Node component definition.
 
-use bevy::prelude::*;
 use crate::core::constants::*;
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]

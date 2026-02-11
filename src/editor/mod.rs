@@ -11,9 +11,8 @@ pub use resources::SkinChains;
 use bevy::prelude::*;
 
 use crate::core::{
-    ConstraintGraph, Playground, anchor_movement_system,
-    collision_avoidance_system, constraint_solving_system, update_constraint_graph,
-    verlet_integration_system,
+    ConstraintGraph, Playground, anchor_movement_system, collision_avoidance_system, constraint_solving_system,
+    update_constraint_graph, verlet_integration_system,
 };
 use tools::*;
 use visuals::*;

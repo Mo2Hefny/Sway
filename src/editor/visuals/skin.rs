@@ -45,11 +45,7 @@ pub fn spawn_skin_visual(
     ));
 }
 
-pub fn update_skin_chains(
-    graph: Res<ConstraintGraph>,
-    nodes: Query<&Node>,
-    mut skin_chains: ResMut<SkinChains>,
-) {
+pub fn update_skin_chains(graph: Res<ConstraintGraph>, nodes: Query<&Node>, mut skin_chains: ResMut<SkinChains>) {
     if !graph.is_changed() {
         return;
     }
@@ -65,7 +61,13 @@ pub fn sync_skin_visual(
     skin_chains: Res<SkinChains>,
     nodes: Query<&Node>,
     mut fill_query: Query<
-        (Entity, &Mesh2d, &MeshMaterial2d<ColorMaterial>, &SkinGroupIndex, &mut Visibility),
+        (
+            Entity,
+            &Mesh2d,
+            &MeshMaterial2d<ColorMaterial>,
+            &SkinGroupIndex,
+            &mut Visibility,
+        ),
         (With<SkinMesh>, Without<SkinOutline>),
     >,
     mut outline_query: Query<
@@ -76,11 +78,7 @@ pub fn sync_skin_visual(
     let show = display_settings.show_skin;
     let opaque = !display_settings.show_nodes;
 
-    let chains = if show {
-        &skin_chains.chains
-    } else {
-        &Vec::new()
-    };
+    let chains = if show { &skin_chains.chains } else { &Vec::new() };
 
     let chain_count = chains.len();
 
@@ -197,7 +195,9 @@ fn build_ordered_chains(graph: &ConstraintGraph, nodes: &Query<&Node>) -> Vec<Ve
             continue;
         }
 
-        let Some(neighbors) = graph.adjacency.get(&start) else { continue };
+        let Some(neighbors) = graph.adjacency.get(&start) else {
+            continue;
+        };
 
         for &(next, rest_len) in neighbors {
             if *visited.get(&next).unwrap_or(&false) {
@@ -230,7 +230,7 @@ fn find_chain_starts(adj: &HashMap<Entity, Vec<(Entity, f32)>>, nodes: &Query<&N
             leaves.push(entity);
         }
     }
-    
+
     starts.sort();
     leaves.sort();
     starts.extend(leaves);
@@ -331,7 +331,11 @@ fn evaluate_catmull_rom_closed(control_points: &[Vec2], samples_per_segment: usi
         let p0 = control_points[i - 1];
         let p1 = control_points[i];
         let p2 = control_points[i + 1];
-        let p3 = if i + 2 < point_count { control_points[i + 2] } else { control_points[0] };
+        let p3 = if i + 2 < point_count {
+            control_points[i + 2]
+        } else {
+            control_points[0]
+        };
 
         for s in 0..samples_per_segment {
             let t = s as f32 / samples_per_segment as f32;
