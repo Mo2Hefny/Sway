@@ -5,20 +5,24 @@ This is where the magic happens! Making things move, stick together, while respe
 ## 1. Verlet Integration
 
 Normal approach would probably be something like this:
+
 $$x_{t+1} = x_t + v_t$$
 $$v_{t+1} = v_t + a_t$$
 
 This is the standard Euler integration (slightly approximated). It is simple and fast, but it can be unstable especially when dealing with constraints, more on that later.
 
 Then there is the Semi-Implicit Euler integration, which is:
+
 $$x_{t+1} = x_t + v_{t+1}$$
 $$v_{t+1} = v_t + a_t$$
 
 We can simplify it to:
+
 $$x_{t+1} = x_t + v_t + a_t$$
 $$v_{t+1} = x_{t+1} - x_t \to v_t = x_t - x_{t-1}$$
 
 Thus, we can finally write it as:
+
 $$x_{t+1} = x_t + (x_t - x_{t-1}) + a_t$$
 
 Congratulations! We now have Verlet integration!
@@ -33,7 +37,7 @@ Normal bones have some constraints. For example, a spine can't bend more than 45
 These constraints are divided into two categories:
 
 ### Distance Constraints
-The 'edge' between nodes. This is what keeps the nodes at a specific distance from each other.
+The "edge" between nodes. This is what keeps the nodes at a specific distance from each other.
 
 <p align="center">
   <img src="assets/distance_constraints.gif" alt="distance_constraints">
@@ -42,21 +46,26 @@ The 'edge' between nodes. This is what keeps the nodes at a specific distance fr
 Imagine we have two nodes, $A$ and $B$, connected by a spring (or a bone).
 We want the distance between them to be strictly equal to $L$ (Length).
 
-1.  First we calculate the vector between them:
-    $$\vec{d} = P_B - P_A$$
+1.  First, we calculate the vector between them:
 
-2.  Then we calculate the current distance:
-    $$dist = |\vec{d}|$$
+$$\vec{d} = P_B - P_A$$
 
-3.  We also calculate the normalized vector to know the direction for our correction:
-    $$\hat{d} = \frac{\vec{d}}{dist}$$
+3.  Then we calculate the current distance:
 
-4.  Now, get the difference from the wanted length:
-    $$diff = dist - L$$
+$$dist = |\vec{d}|$$
 
-5.  Finally, we nudge them back together:
-    $$P_A = P_A + \hat{d} \times 0.5 \times diff$$
-    $$P_B = P_B - \hat{d} \times 0.5 \times diff$$
+5.  We also calculate the normalized vector to know the direction for our correction:
+
+$$\hat{d} = \frac{\vec{d}}{dist}$$
+
+7.  Now, get the difference from the wanted length:
+
+$$diff = dist - L$$
+
+9.  Finally, we nudge them back together:
+
+$$P_A = P_A + \hat{d} \times 0.5 \times diff$$
+$$P_B = P_B - \hat{d} \times 0.5 \times diff$$
 
 Notice the $0.5$? That's because we want to move *both* nodes equally to meet in the middle. If one node is an **Anchor** (infinite mass), we move the other one 100% of the way instead.
 
@@ -75,9 +84,11 @@ $$
 $$
 
 Then we reconstruct the node's position based on this new valid angle:
+
 $$P_{new} = P_{parent} + \text{Vector}(\theta_{clamped}) \times L$$
 
 This is effectively a simple Forward Kinematics pass that we run iteratively to keep the spine stiff but flexible.
+
 <p align="center">
   <img src="assets/angle_constraints.gif" alt="angle_constraints">
 </p>
