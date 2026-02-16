@@ -36,6 +36,7 @@ resvg = { version = "0.46.0", features = ["default"] }
 
 # UUID for node/constraint identification
 uuid = { version = "1.0", features = ["v4", "serde"] }
+wasm-bindgen-futures = "0.4.58"
 
 [features]
 default = []

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sway | Procedural Animation Engine</title>
+
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #222; 
+            overflow: hidden;
+        }
+
+        canvas { 
+            display: block; 
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: sans-serif;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">Loading Sway...</div>
+    <link data-trunk rel="rust" />
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            const observer = new MutationObserver(() => {
+                const canvas = document.querySelector("canvas");
+                if (canvas) {
+                    document.getElementById("loading")?.remove();
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(document.body, { childList: true, subtree: true });
+        });
+    </script>
+</body>
+</html>
