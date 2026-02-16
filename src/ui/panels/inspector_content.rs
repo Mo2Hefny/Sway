@@ -6,6 +6,7 @@ use bevy::picking::prelude::Pickable;
 use bevy::input::keyboard::{Key, KeyboardInput};
 
 use crate::core::{Node as SimNode, NodeType, DistanceConstraint, Playground};
+use crate::core::components::LimbSet;
 use crate::core::constants::{MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE};
 use crate::editor::tools::selection::Selection;
 use crate::ui::messages::PLACEHOLDER_NO_SELECTION;
@@ -58,7 +59,15 @@ pub enum InspectorFieldKind {
     ConstraintLength(Entity),
     AccFnX,
     AccFnY,
+    ConstantAccX,
+    ConstantAccY,
     CollisionDamping,
+    LimbMaxReach(usize),
+    LimbTargetOffset(usize),
+    LimbStepThreshold(usize),
+    LimbStepSpeed(usize),
+    LimbStepHeight(usize),
+    LimbFlipBend(usize, usize),
 }
 
 // ============================================================================
@@ -83,8 +92,7 @@ const HEADER_FONT_SIZE: f32 = 11.0;
 const RADIUS_MIN: f32 = 4.0;
 const RADIUS_MAX: f32 = 50.0;
 
-const AXIS_X: &str = "X";
-const AXIS_Y: &str = "Y";
+
 
 // ============================================================================
 // SPAWNING
@@ -99,13 +107,13 @@ pub fn update_inspector_content(
     content_query: Query<Entity, With<InspectorContent>>,
     property_rows: Query<Entity, Or<(With<InspectorPropertyRow>, With<InspectorSection>, With<NoSelectionText>)>>,
     node_query: Query<&SimNode>,
+    limb_set_query: Query<&LimbSet>,
     constraint_query: Query<(Entity, &DistanceConstraint)>,
 ) {
     if !selection.is_changed() && !inspector_state.is_changed() {
         return;
     }
 
-    // Clear existing content
     for entity in property_rows.iter() {
         commands.entity(entity).despawn();
     }
@@ -130,18 +138,56 @@ pub fn update_inspector_content(
     };
 
     let Ok(node) = node_query.get(selected_entity) else { return };
+    let limb_set = limb_set_query.get(selected_entity).ok();
 
     match inspector_state.active_page {
-        InspectorPage::Properties => spawn_properties_page(&mut commands, content_entity, node),
+        InspectorPage::Properties => spawn_properties_page(&mut commands, content_entity, node, limb_set),
         InspectorPage::Transform => spawn_transform_page(&mut commands, content_entity, node, &playground),
         InspectorPage::Constraints => spawn_constraints_page(&mut commands, content_entity, selected_entity, &constraint_query, &node_query),
     }
 }
 
-fn spawn_properties_page(commands: &mut Commands, content_entity: Entity, node: &SimNode) {
+fn spawn_properties_page(commands: &mut Commands, content_entity: Entity, node: &SimNode, limb_set: Option<&LimbSet>) {
     commands.entity(content_entity).with_children(|parent| {
         spawn_section_header(parent, "Node Settings");
         spawn_dropdown_field(parent, "Node Type", node.node_type, InspectorFieldKind::NodeType);
+
+        spawn_section_header(parent, "Physics");
+        spawn_number_field(parent, "Collision Damp", node.collision_damping,
+            InspectorFieldKind::CollisionDamping, 0.0, 1.0);
+
+        spawn_section_header(parent, "Acceleration");
+        spawn_vec2_field_asymmetric(parent, "Constant", node.constant_acceleration,
+            InspectorFieldKind::ConstantAccX, InspectorFieldKind::ConstantAccY,
+            -1000.0, 1000.0, -1000.0, 1000.0);
+
+        if let Some(limb_set) = limb_set {
+            for (i, limb) in limb_set.limbs.iter().enumerate() {
+                let label = if limb_set.limbs.len() == 1 {
+                    "Limb IK".to_string()
+                } else {
+                    format!("Limb {} IK", i + 1)
+                };
+                spawn_section_header(parent, &label);
+                spawn_number_field(parent, "Max Reach", limb.max_reach,
+                    InspectorFieldKind::LimbMaxReach(i), 10.0, 1000.0);
+                spawn_number_field(parent, "Angle Offset", limb.target_direction_offset.to_degrees(),
+                    InspectorFieldKind::LimbTargetOffset(i), -180.0, 180.0);
+                
+                spawn_section_header(parent, &format!("Limb {} Stepping", i + 1));
+                spawn_number_field(parent, "Threshold", limb.step_threshold,
+                    InspectorFieldKind::LimbStepThreshold(i), 0.0, 200.0);
+                spawn_number_field(parent, "Step Speed", limb.step_speed,
+                    InspectorFieldKind::LimbStepSpeed(i), 0.1, 20.0);
+                spawn_number_field(parent, "Step Height", limb.step_height,
+                    InspectorFieldKind::LimbStepHeight(i), 0.0, 100.0);
+                
+                for (j, &val) in limb.flip_bend.iter().enumerate() {
+                    spawn_checkbox_field(parent, &format!("Flip Joint {}", j + 1), val,
+                        InspectorFieldKind::LimbFlipBend(i, j));
+                }
+            }
+        }
     });
 }
 
@@ -160,14 +206,6 @@ fn spawn_transform_page(commands: &mut Commands, content_entity: Entity, node: &
             pos_min_x, pos_max_x, pos_min_y, pos_max_y);
         spawn_number_field(parent, "Radius", node.radius, 
             InspectorFieldKind::Radius, RADIUS_MIN, RADIUS_MAX);
-
-        spawn_section_header(parent, "Physics");
-        spawn_number_field(parent, "Collision Damp", node.collision_damping,
-            InspectorFieldKind::CollisionDamping, 0.0, 1.0);
-
-        spawn_section_header(parent, "Acceleration");
-        spawn_function_input(parent, "X Axis", &node.acc_fn_x, InspectorFieldKind::AccFnX);
-        spawn_function_input(parent, "Y Axis", &node.acc_fn_y, InspectorFieldKind::AccFnY);
     });
 }
 
@@ -461,6 +499,41 @@ fn spawn_checkbox_field(
     });
 }
 
+/// Spawns a checkbox field
+fn spawn_checkbox_field(
+    parent: &mut ChildSpawnerCommands,
+    label: &str,
+    checked: bool,
+    field: InspectorFieldKind,
+) {
+    parent.spawn((
+        Name::new(format!("Property: {}", label)),
+        InspectorPropertyRow,
+        UiNode {
+            width: Val::Percent(100.0),
+            height: px(ROW_HEIGHT),
+            flex_direction: FlexDirection::Row,
+            align_items: AlignItems::Center,
+            padding: UiRect::horizontal(px(SECTION_PADDING)),
+            margin: UiRect::vertical(px(ROW_SPACING)),
+            ..default()
+        },
+    )).with_children(|row| {
+        spawn_property_label(row, label);
+        
+        row.spawn((
+            UiNode {
+                flex_grow: 1.0,
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::FlexEnd,
+                ..default()
+            },
+        )).with_children(|container| {
+            spawn_checkbox(container, checked, Some(InputField { kind: field, min: 0.0, max: 1.0 }));
+        });
+    });
+}
+
 /// Spawns a dropdown field for enum selection
 fn spawn_dropdown_field(
     parent: &mut ChildSpawnerCommands,
@@ -557,7 +630,7 @@ fn spawn_dropdown_field(
                 )).with_children(|menu| {
                     spawn_dropdown_option(menu, NodeType::Normal, NodeType::Normal.name(), current == NodeType::Normal);
                     spawn_dropdown_option(menu, NodeType::Anchor, NodeType::Anchor.name(), current == NodeType::Anchor);
-                    spawn_dropdown_option(menu, NodeType::Leg, NodeType::Leg.name(), current == NodeType::Leg);
+                    spawn_dropdown_option(menu, NodeType::Limb, NodeType::Limb.name(), current == NodeType::Limb);
                 });
             });
         });
@@ -632,6 +705,7 @@ pub fn handle_text_input_drag(
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
     mut constraint_query: Query<&mut DistanceConstraint>,
+    mut limb_set_query: Query<&mut LimbSet>,
 ) {
     let Some(drag_entity) = focus.drag_entity else { return };
     let Some(drag_field) = focus.drag_field_kind else { return };
@@ -650,7 +724,7 @@ pub fn handle_text_input_drag(
     if focus.is_dragging {
         let new_value = (focus.drag_origin_value + delta_x * DRAG_SENSITIVITY)
             .clamp(focus.drag_min, focus.drag_max);
-        apply_field_value(&selection, &mut node_query, &mut constraint_query, drag_field, new_value);
+        apply_field_value(&selection, &mut node_query, &mut constraint_query, &mut limb_set_query, drag_field, new_value);
         update_input_text(&mut text_query, drag_field, &format!("{:.2}", new_value));
         focus.drag_accumulated = new_value;
     }
@@ -681,6 +755,7 @@ pub fn handle_text_input_keyboard(
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
     mut constraint_query: Query<&mut DistanceConstraint>,
+    mut limb_set_query: Query<&mut LimbSet>,
 ) {
     let Some(_focused_entity) = focus.entity else { return };
     let Some(field_kind) = focus.field_kind else { return };
@@ -705,7 +780,7 @@ pub fn handle_text_input_keyboard(
             Key::Enter => {
                 if let Ok(value) = focus.buffer.parse::<f32>() {
                     let clamped: f32 = value.clamp(focus.min, focus.max);
-                    apply_field_value(&selection, &mut node_query, &mut constraint_query, field_kind, clamped);
+                    apply_field_value(&selection, &mut node_query, &mut constraint_query, &mut limb_set_query, field_kind, clamped);
                     focus.buffer = format!("{:.2}", clamped);
                     update_input_text(&mut text_query, field_kind, &focus.buffer);
                 }
@@ -718,7 +793,7 @@ pub fn handle_text_input_keyboard(
             Key::Tab => {
                 if let Ok(value) = focus.buffer.parse::<f32>() {
                     let clamped: f32 = value.clamp(focus.min, focus.max);
-                    apply_field_value(&selection, &mut node_query, &mut constraint_query, field_kind, clamped);
+                    apply_field_value(&selection, &mut node_query, &mut constraint_query, &mut limb_set_query, field_kind, clamped);
                 }
                 focus.entity = None;
                 focus.buffer.clear();
@@ -748,10 +823,10 @@ fn apply_field_value(
     selection: &Res<Selection>,
     node_query: &mut Query<&mut SimNode>,
     constraint_query: &mut Query<&mut DistanceConstraint>,
+    limb_set_query: &mut Query<&mut LimbSet>,
     kind: InspectorFieldKind,
     value: f32,
 ) {
-    // Handle constraint length edits separately.
     if let InspectorFieldKind::ConstraintLength(constraint_entity) = kind {
         if let Ok(mut constraint) = constraint_query.get_mut(constraint_entity) {
             constraint.rest_length = value.clamp(MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE);
@@ -760,6 +835,61 @@ fn apply_field_value(
     }
 
     let Some(selected_entity) = selection.entity else { return };
+
+    match kind {
+        InspectorFieldKind::LimbMaxReach(idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(idx) {
+                    limb.max_reach = value.clamp(10.0, 1000.0);
+                }
+            }
+            return;
+        }
+        InspectorFieldKind::LimbTargetOffset(idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(idx) {
+                    limb.target_direction_offset = value.to_radians();
+                }
+            }
+            return;
+        }
+        InspectorFieldKind::LimbStepThreshold(idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(idx) {
+                    limb.step_threshold = value.max(0.0);
+                }
+            }
+            return;
+        }
+        InspectorFieldKind::LimbStepSpeed(idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(idx) {
+                    limb.step_speed = value.max(0.1);
+                }
+            }
+            return;
+        }
+        InspectorFieldKind::LimbStepHeight(idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(idx) {
+                    limb.step_height = value.max(0.0);
+                }
+            }
+            return;
+        }
+        InspectorFieldKind::LimbFlipBend(l_idx, j_idx) => {
+            if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                if let Some(limb) = limb_set.limbs.get_mut(l_idx) {
+                    if let Some(val) = limb.flip_bend.get_mut(j_idx) {
+                        *val = value > 0.5;
+                    }
+                }
+            }
+            return;
+        }
+        _ => {}
+    }
+
     let Ok(mut node) = node_query.get_mut(selected_entity) else { return };
     
     match kind {
@@ -768,6 +898,8 @@ fn apply_field_value(
         InspectorFieldKind::AccelerationX => node.acceleration.x = value,
         InspectorFieldKind::AccelerationY => node.acceleration.y = value,
         InspectorFieldKind::Radius => node.radius = value,
+        InspectorFieldKind::ConstantAccX => node.constant_acceleration.x = value,
+        InspectorFieldKind::ConstantAccY => node.constant_acceleration.y = value,
         InspectorFieldKind::CollisionDamping => node.collision_damping = value.clamp(0.0, 1.0),
         _ => {}
     }
@@ -778,6 +910,7 @@ fn apply_field_value(
 pub fn live_sync_inspector_values(
     selection: Res<Selection>,
     node_query: Query<&SimNode>,
+    limb_set_query: Query<&LimbSet>,
     focus: Res<TextInputFocus>,
     fn_focus: Res<FunctionInputFocus>,
     mut text_query: Query<(&mut Text, &InputField<InspectorFieldKind>), With<TextInputDisplay>>,
@@ -785,6 +918,7 @@ pub fn live_sync_inspector_values(
 ) {
     let Some(selected_entity) = selection.entity else { return };
     let Ok(node) = node_query.get(selected_entity) else { return };
+    let limb_set = limb_set_query.get(selected_entity).ok();
 
     for (mut text, field) in text_query.iter_mut() {
         // Skip if this field is currently focused or being dragged.
@@ -798,10 +932,18 @@ pub fn live_sync_inspector_values(
         let value = match field.kind {
             InspectorFieldKind::PositionX => node.position.x,
             InspectorFieldKind::PositionY => node.position.y,
+            InspectorFieldKind::ConstantAccX => node.constant_acceleration.x,
+            InspectorFieldKind::ConstantAccY => node.constant_acceleration.y,
             InspectorFieldKind::AccelerationX => node.acceleration.x,
             InspectorFieldKind::AccelerationY => node.acceleration.y,
             InspectorFieldKind::Radius => node.radius,
             InspectorFieldKind::CollisionDamping => node.collision_damping,
+            InspectorFieldKind::LimbMaxReach(idx) => if let Some(ls) = limb_set { ls.limbs.get(idx).map(|l| l.max_reach).unwrap_or(0.0) } else { 0.0 },
+            InspectorFieldKind::LimbTargetOffset(idx) => if let Some(ls) = limb_set { ls.limbs.get(idx).map(|l| l.target_direction_offset.to_degrees()).unwrap_or(0.0) } else { 0.0 },
+            InspectorFieldKind::LimbStepThreshold(idx) => if let Some(ls) = limb_set { ls.limbs.get(idx).map(|l| l.step_threshold).unwrap_or(0.0) } else { 0.0 },
+            InspectorFieldKind::LimbStepSpeed(idx) => if let Some(ls) = limb_set { ls.limbs.get(idx).map(|l| l.step_speed).unwrap_or(0.0) } else { 0.0 },
+            InspectorFieldKind::LimbStepHeight(idx) => if let Some(ls) = limb_set { ls.limbs.get(idx).map(|l| l.step_height).unwrap_or(0.0) } else { 0.0 },
+            InspectorFieldKind::LimbFlipBend(l_idx, j_idx) => if let Some(ls) = limb_set { ls.limbs.get(l_idx).and_then(|l| l.flip_bend.get(j_idx).map(|&b| if b { 1.0 } else { 0.0 })).unwrap_or(0.0) } else { 0.0 },
             _ => continue,
         };
 
@@ -860,6 +1002,7 @@ pub fn handle_click_outside(
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
     mut constraint_query: Query<&mut DistanceConstraint>,
+    mut limb_set_query: Query<&mut LimbSet>,
 ) {
     if !mouse.just_pressed(MouseButton::Left) {
         return;
@@ -874,7 +1017,7 @@ pub fn handle_click_outside(
     if !clicking_input && focus.entity.is_some() {
         if let (Some(field_kind), Ok(value)) = (focus.field_kind, focus.buffer.parse::<f32>()) {
             let clamped: f32 = value.clamp(focus.min, focus.max);
-            apply_field_value(&selection, &mut node_query, &mut constraint_query, field_kind, clamped);
+            apply_field_value(&selection, &mut node_query, &mut constraint_query, &mut limb_set_query, field_kind, clamped);
         }
         focus.entity = None;
         focus.buffer.clear();
@@ -885,17 +1028,28 @@ pub fn handle_click_outside(
 pub fn handle_inspector_checkbox_click(
     selection: Res<Selection>,
     mut node_query: Query<&mut SimNode>,
+    mut limb_set_query: Query<&mut LimbSet>,
     checkbox_query: Query<(Entity, &Interaction, &InputField<InspectorFieldKind>), (Changed<Interaction>, With<Checkbox>)>,
 ) {
-    for (_checkbox_entity, interaction, _field) in checkbox_query.iter() {
+    for (_checkbox_entity, interaction, field) in checkbox_query.iter() {
         if *interaction != Interaction::Pressed {
             continue;
         }
 
         let Some(selected_entity) = selection.entity else { continue };
-        let Ok(_node) = node_query.get_mut(selected_entity) else { continue };
 
-        // Logic for FollowMouse removed
+        match field.kind {
+            InspectorFieldKind::LimbFlipBend(l_idx, j_idx) => {
+                if let Ok(mut limb_set) = limb_set_query.get_mut(selected_entity) {
+                    if let Some(limb) = limb_set.limbs.get_mut(l_idx) {
+                        if let Some(val) = limb.flip_bend.get_mut(j_idx) {
+                            *val = !*val;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 }
 
@@ -961,10 +1115,8 @@ fn rebuild_inspector(
     
     let Ok(content_entity) = content_query.get_single() else { return };
 
-    // Rebuild only non-constraint pages from here; constraints page is
-    // rebuilt via the main update_inspector_content which owns the queries.
     match page {
-        InspectorPage::Properties => spawn_properties_page(commands, content_entity, node),
+        InspectorPage::Properties => spawn_properties_page(commands, content_entity, node, None),
         InspectorPage::Transform => spawn_transform_page(commands, content_entity, node, playground),
         InspectorPage::Constraints => {
             // Constraints page cannot be rebuilt from here because 

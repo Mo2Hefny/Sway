@@ -5,6 +5,7 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContexts, EguiTextureHandle, egui};
 
 use crate::core::constants::{MAX_CONSTRAINT_DISTANCE, MIN_CONSTRAINT_DISTANCE};
+use crate::core::components::LimbSet;
 use crate::core::{
     AnchorMovementMode, DistanceConstraint, Node as SimNode, NodeType, Playground, ProceduralPathType,
     build_scene_data, export_to_file, import_from_file, spawn_scene_data, PendingFileOp,
@@ -101,6 +102,7 @@ pub fn editor_ui_system(
     selection: Res<Selection>,
     mut playground: ResMut<Playground>,
     mut node_query: Query<(Entity, &mut SimNode)>,
+    mut limb_set_query: Query<(Entity, &mut LimbSet)>,
     constraint_query: Query<(Entity, &DistanceConstraint)>,
     mut pending_actions: ResMut<PendingConstraintActions>,
     windows: Query<&Window, With<PrimaryWindow>>,
@@ -182,7 +184,7 @@ pub fn editor_ui_system(
                         }
                     }
                     if ui.button(BTN_EXPORT).clicked() {
-                        let scene = build_scene_data(&node_query, &constraint_query);
+                        let scene = build_scene_data(&node_query, &constraint_query, &mut limb_set_query);
                         export_to_file(&scene);
                     }
 
@@ -190,7 +192,6 @@ pub fn editor_ui_system(
                     ui.add_space(16.0);
                     ui.separator();
                     ui.add_space(8.0);
-                    ui.label(LABEL_PLAYGROUND_SIZE);
                     ui.label(LABEL_PLAYGROUND_SIZE);
 
                     // Aspect ratio logic
@@ -298,6 +299,7 @@ pub fn editor_ui_system(
                             &playground,
                             inspector_state.active_page,
                             &mut node_query,
+                            &mut limb_set_query,
                             &constraint_query,
                             &mut constraint_updates,
                             &mut constraint_deletes,
@@ -542,9 +544,10 @@ pub fn apply_editor_actions(
 fn inspector_content_ui(
     ui: &mut egui::Ui,
     selection: &Selection,
-    playground: &Playground,
+    _playground: &Playground,
     page: InspectorPage,
     node_query: &mut Query<(Entity, &mut SimNode)>,
+    limb_set_query: &mut Query<(Entity, &mut LimbSet)>,
     constraint_query: &Query<(Entity, &DistanceConstraint)>,
     constraint_updates: &mut Vec<(Entity, f32)>,
     constraint_deletes: &mut Vec<Entity>,
@@ -580,10 +583,10 @@ fn inspector_content_ui(
                                 node.node_type = NodeType::Anchor;
                             }
                             if ui
-                                .selectable_label(node.node_type == NodeType::Leg, NodeType::Leg.name())
+                                .selectable_label(node.node_type == NodeType::Limb, NodeType::Limb.name())
                                 .clicked()
                             {
-                                node.node_type = NodeType::Leg;
+                                node.node_type = NodeType::Limb;
                             }
                         });
                 });
@@ -596,6 +599,53 @@ fn inspector_content_ui(
                     }
                     ui.label("°");
                 });
+
+                if let Ok((_e, mut limb_set)) = limb_set_query.get_mut(selected_entity) {
+                    let limb_count = limb_set.limbs.len();
+                    for (i, limb) in limb_set.limbs.iter_mut().enumerate() {
+                        ui.add_space(8.0);
+                        ui.separator();
+                        ui.add_space(8.0);
+                        let label = if limb_count == 1 {
+                            "Limb IK".to_string()
+                        } else {
+                            format!("Limb {} IK", i + 1)
+                        };
+                        ui.label(&label);
+                        ui.label(format!("Joints: {}", limb.joints.len()));
+                        ui.horizontal(|ui| {
+                            ui.label("Max Reach");
+                            ui.add(egui::Slider::new(&mut limb.max_reach, 10.0..=1000.0));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Angle Offset:");
+                            let mut deg = limb.target_direction_offset.to_degrees();
+                            if ui.add(egui::DragValue::new(&mut deg).speed(1.0).suffix("°")).changed() {
+                                limb.target_direction_offset = deg.to_radians();
+                            }
+                        });
+
+                        ui.heading("Stepping");
+                        ui.horizontal(|ui| {
+                            ui.label("Threshold:");
+                            ui.add(egui::DragValue::new(&mut limb.step_threshold).speed(0.1).range(0.0..=200.0));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Speed:");
+                            ui.add(egui::DragValue::new(&mut limb.step_speed).speed(0.1).range(0.1..=20.0));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Height:");
+                            ui.add(egui::DragValue::new(&mut limb.step_height).speed(0.1).range(0.0..=100.0));
+                        });
+                        
+                        ui.add_space(4.0);
+                        ui.label("Joint Flip:");
+                        for (j, flipped) in limb.flip_bend.iter_mut().enumerate() {
+                             ui.checkbox(flipped, format!("Joint {}", j + 1));
+                        }
+                    }
+                }
 
                 if node.node_type == NodeType::Anchor {
                     ui.add_space(8.0);
@@ -707,6 +757,34 @@ fn inspector_content_ui(
                 }
             });
 
+            ui.collapsing("Physics", |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("Collision Damp");
+                    ui.add(egui::Slider::new(&mut node.collision_damping, 0.0..=1.0));
+                });
+            });
+
+            ui.collapsing("Acceleration", |ui| {
+                ui.label("Constant");
+                ui.horizontal(|ui| {
+                    ui.colored_label(to_egui_color(AXIS_X), "X");
+                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.x).speed(1.0));
+                    ui.add_space(8.0);
+                    ui.colored_label(to_egui_color(AXIS_Y), "Y");
+                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.y).speed(1.0));
+                });
+
+                ui.add_space(4.0);
+                ui.label("Live (Accumulated)");
+                ui.horizontal(|ui| {
+                    ui.colored_label(to_egui_color(AXIS_X), "X");
+                    ui.label(format!("{:.2}", node.acceleration.x));
+                    ui.add_space(16.0);
+                    ui.colored_label(to_egui_color(AXIS_Y), "Y");
+                    ui.label(format!("{:.2}", node.acceleration.y));
+                });
+            });
+
             ui.add_space(8.0);
             ui.separator();
             ui.add_space(8.0);
@@ -723,82 +801,44 @@ fn inspector_content_ui(
             }
         }
         InspectorPage::Transform => {
-            let inner_min = playground.inner_min();
-            let inner_max = playground.inner_max();
-            let pos_min_x = inner_min.x + node.radius;
-            let pos_max_x = inner_max.x - node.radius;
-            let pos_min_y = inner_min.y + node.radius;
-            let pos_max_y = inner_max.y - node.radius;
-            ui.collapsing("Transform", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Position");
-                    let mut pos = node.position;
-                    let changed_x = ui
-                        .add(egui::DragValue::new(&mut pos.x).range(pos_min_x..=pos_max_x))
-                        .changed();
-                    let changed_y = ui
-                        .add(egui::DragValue::new(&mut pos.y).range(pos_min_y..=pos_max_y))
-                        .changed();
-                    if changed_x || changed_y {
-                        node.position = pos;
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Radius");
-                    let mut r = node.radius;
-                    if ui.add(egui::DragValue::new(&mut r).range(4.0..=50.0)).changed() {
-                        node.radius = r;
-                    }
-                });
+            ui.label("Position");
+            ui.horizontal(|ui| {
+                ui.colored_label(to_egui_color(AXIS_X), "X");
+                ui.add(egui::DragValue::new(&mut node.position.x).speed(1.0));
+                ui.add_space(8.0);
+                ui.colored_label(to_egui_color(AXIS_Y), "Y");
+                ui.add(egui::DragValue::new(&mut node.position.y).speed(1.0));
             });
-            ui.collapsing("Acceleration", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("X");
-                    let mut ax = node.acceleration.x;
-                    if ui.add(egui::DragValue::new(&mut ax).range(-10.0..=10.0)).changed() {
-                        node.acceleration.x = ax;
-                    }
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Y");
-                    let mut ay = node.acceleration.y;
-                    if ui.add(egui::DragValue::new(&mut ay).range(-10.0..=10.0)).changed() {
-                        node.acceleration.y = ay;
-                    }
-                });
-            });
+            ui.add_space(8.0);
+            ui.label("Radius");
+            ui.add(egui::Slider::new(&mut node.radius, 1.0..=100.0));
         }
         InspectorPage::Constraints => {
-            let connected: Vec<_> = constraint_query
-                .iter()
-                .filter(|(_, c)| c.involves(selected_entity))
-                .collect();
-            ui.collapsing("Constraints", |ui| {
-                if connected.is_empty() {
-                    ui.colored_label(to_egui_color(TEXT_DISABLED), "No constraints");
-                } else {
-                    for (constraint_entity, constraint) in &connected {
-                        let other = constraint.other(selected_entity).unwrap();
-                        let label = format!("→ {:?}", other);
-                        ui.horizontal(|ui| {
-                            if ui.small_button("×").clicked() {
-                                constraint_deletes.push(*constraint_entity);
-                            }
-                            ui.label(&label);
-                            let mut len = constraint.rest_length;
-                            if ui
-                                .add(
-                                    egui::DragValue::new(&mut len)
-                                        .range(MIN_CONSTRAINT_DISTANCE..=MAX_CONSTRAINT_DISTANCE),
-                                )
-                                .changed()
-                            {
-                                constraint_updates.push((*constraint_entity, len));
-                            }
-                        });
-                    }
+            ui.label("Connected Constraints");
+            let mut connected_count = 0;
+            for (c_entity, constraint) in constraint_query.iter() {
+                if constraint.involves(selected_entity) {
+                    connected_count += 1;
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Constraint {:?}", c_entity));
+                        if ui.button("X").clicked() {
+                            constraint_deletes.push(c_entity);
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("Length");
+                        // We track updates in a temp vector to apply later
+                        let mut len = constraint.rest_length;
+                        if ui.add(egui::Slider::new(&mut len, 10.0..=500.0)).changed() {
+                            constraint_updates.push((c_entity, len));
+                        }
+                    });
                 }
-            });
+            }
+            if connected_count == 0 {
+                ui.colored_label(to_egui_color(TEXT_SECONDARY), "No constraints connected.");
+            }
         }
     }
 }
