@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::core::components::{CellEntry, Node, Playground};
+use crate::core::components::{CellEntry, Node, NodeType, Playground};
 use crate::core::constants::{CELL_SIZE, MIN_COLLISION_DISTANCE};
 use crate::core::resources::ConstraintGraph;
 use crate::ui::state::PlaybackState;
@@ -51,6 +51,10 @@ fn collect_colliders(
     let mut colliders = Vec::with_capacity(nodes.iter().len());
 
     for (entity, mut node) in nodes.iter_mut() {
+        if node.node_type == NodeType::Limb {
+            continue;
+        }
+
         apply_boundary_collision(&mut node, inner_min, inner_max);
 
         colliders.push(Collider {

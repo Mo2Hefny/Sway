@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum NodeType {
     Anchor,
-    Leg,
+    Limb,
     #[default]
     Normal,
 }
@@ -16,7 +16,7 @@ impl NodeType {
     pub fn name(&self) -> &'static str {
         match self {
             NodeType::Anchor => "Anchor",
-            NodeType::Leg => "Leg",
+            NodeType::Limb => "Limb",
             NodeType::Normal => "Normal",
         }
     }

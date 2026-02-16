@@ -93,3 +93,11 @@ pub struct SkinOutline;
 /// Tracks which chain group a skin entity belongs to.
 #[derive(Component, Debug)]
 pub struct SkinGroupIndex(pub usize);
+
+/// Marker for limb fill mesh entities (rendered separately from body skin).
+#[derive(Component, Debug)]
+pub struct LimbMesh;
+
+/// Marker for limb outline mesh entities.
+#[derive(Component, Debug)]
+pub struct LimbOutline;

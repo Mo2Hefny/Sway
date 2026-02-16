@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use super::components::{DistanceConstraint, Node};
+use super::components::{DistanceConstraint, Limb, LimbSet, Node};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstraintData {
@@ -13,27 +13,61 @@ pub struct ConstraintData {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LimbData {
+    pub joints: Vec<usize>,
+    pub target: Vec2,
+    pub lengths: Vec<f32>,
+    pub iterations: usize,
+    pub tolerance: f32,
+    pub flip_bend: Vec<bool>,
+    pub target_node: Option<usize>,
+    pub max_reach: f32,
+    pub target_direction_offset: f32,
+    pub step_threshold: f32,
+    pub step_speed: f32,
+    pub step_height: f32,
+    pub is_stepping: bool,
+    pub step_start: Vec2,
+    pub step_dest: Vec2,
+    pub step_progress: f32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LimbSetData {
+    pub body_node: usize,
+    pub limbs: Vec<LimbData>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SceneData {
+    #[serde(default)]
     pub nodes: Vec<Node>,
+    #[serde(default)]
     pub constraints: Vec<ConstraintData>,
+    #[serde(default)]
+    pub limb_sets: Vec<LimbSetData>,
 }
 
 pub fn build_scene_data(
     nodes: &Query<(Entity, &mut Node)>,
     constraints: &Query<(Entity, &DistanceConstraint)>,
+    limb_sets: &Query<(Entity, &mut LimbSet)>,
 ) -> SceneData {
     let (entity_list, node_list) = extract_node_data(nodes);
     let constraint_list = extract_constraint_data(constraints, &entity_list);
+    let limb_set_list = extract_limb_set_data(limb_sets, &entity_list);
 
     SceneData {
         nodes: node_list,
         constraints: constraint_list,
+        limb_sets: limb_set_list,
     }
 }
 
 pub fn spawn_scene_data(commands: &mut Commands, scene: &SceneData) -> Vec<Entity> {
     let node_entities = spawn_nodes(commands, scene);
     spawn_constraints(commands, scene, &node_entities);
+    spawn_limb_sets(commands, scene, &node_entities);
     node_entities
 }
 
@@ -81,6 +115,44 @@ fn extract_constraint_data(
         .collect()
 }
 
+fn extract_limb_set_data(
+    limb_sets: &Query<(Entity, &mut LimbSet)>,
+    entity_list: &[Entity],
+) -> Vec<LimbSetData> {
+    limb_sets
+        .iter()
+        .map(|(entity, limb_set)| LimbSetData {
+            body_node: find_entity_index(entity, entity_list),
+            limbs: limb_set
+                .limbs
+                .iter()
+                .map(|l| LimbData {
+                    joints: l
+                        .joints
+                        .iter()
+                        .map(|&e| find_entity_index(e, entity_list))
+                        .collect(),
+                    target: l.target,
+                    lengths: l.lengths.clone(),
+                    iterations: l.iterations,
+                    tolerance: l.tolerance,
+                    flip_bend: l.flip_bend.clone(),
+                    target_node: l.target_node.map(|e| find_entity_index(e, entity_list)),
+                    max_reach: l.max_reach,
+                    target_direction_offset: l.target_direction_offset,
+                    step_threshold: l.step_threshold,
+                    step_speed: l.step_speed,
+                    step_height: l.step_height,
+                    is_stepping: l.is_stepping,
+                    step_start: l.step_start,
+                    step_dest: l.step_dest,
+                    step_progress: l.step_progress,
+                })
+                .collect(),
+        })
+        .collect()
+}
+
 fn find_entity_index(entity: Entity, entity_list: &[Entity]) -> usize {
     entity_list.iter().position(|&e| e == entity).unwrap_or(0)
 }
@@ -95,12 +167,56 @@ fn spawn_nodes(commands: &mut Commands, scene: &SceneData) -> Vec<Entity> {
 
 fn spawn_constraints(commands: &mut Commands, scene: &SceneData, node_entities: &[Entity]) {
     for constraint in &scene.constraints {
+        if constraint.node_a >= node_entities.len() || constraint.node_b >= node_entities.len() {
+            continue;
+        }
+
         let node_a = node_entities[constraint.node_a];
         let node_b = node_entities[constraint.node_b];
         commands.spawn((
             Name::new("Distance Constraint"),
             DistanceConstraint::new(node_a, node_b, constraint.rest_length),
         ));
+    }
+}
+
+fn spawn_limb_sets(commands: &mut Commands, scene: &SceneData, node_entities: &[Entity]) {
+    for limb_set_data in &scene.limb_sets {
+        if limb_set_data.body_node >= node_entities.len() {
+            continue;
+        }
+
+        let body_entity = node_entities[limb_set_data.body_node];
+        let limbs = limb_set_data
+            .limbs
+            .iter()
+            .map(|l| Limb {
+                joints: l
+                    .joints
+                    .iter()
+                    .filter_map(|&i| node_entities.get(i).copied())
+                    .collect(),
+                target: l.target,
+                lengths: l.lengths.clone(),
+                iterations: l.iterations,
+                tolerance: l.tolerance,
+                flip_bend: l.flip_bend.clone(),
+                target_node: l.target_node.and_then(|i| node_entities.get(i).copied()),
+                max_reach: l.max_reach,
+                target_direction_offset: l.target_direction_offset,
+                step_threshold: l.step_threshold,
+                step_speed: l.step_speed,
+                step_height: l.step_height,
+                is_stepping: l.is_stepping,
+                step_start: l.step_start,
+                step_dest: l.step_dest,
+                step_progress: l.step_progress,
+            })
+            .collect();
+
+        commands
+            .entity(body_entity)
+            .insert(LimbSet { limbs });
     }
 }
 

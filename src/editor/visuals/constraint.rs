@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use super::mesh::create_line_mesh;
+use crate::editor::mesh::primitives::create_line_mesh;
 use crate::core::{DistanceConstraint, Node};
 use crate::editor::components::{ConstraintVisual, ConstraintVisualOf};
 use crate::editor::constants::*;

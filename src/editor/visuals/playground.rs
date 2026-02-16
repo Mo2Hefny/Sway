@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use super::mesh::{create_hollow_rect_mesh, create_quad_mesh};
+use crate::editor::mesh::primitives::{create_hollow_rect_mesh, create_quad_mesh};
 use crate::core::Playground;
 use crate::editor::components::{PlaygroundBorder, PlaygroundFill, PlaygroundOutside};
 use crate::editor::constants::*;

@@ -5,6 +5,7 @@ pub mod constants;
 pub mod resources;
 pub mod tools;
 pub mod visuals;
+pub mod mesh;
 
 pub use resources::SkinChains;
 
@@ -12,10 +13,11 @@ use bevy::prelude::*;
 
 use crate::core::{
     ConstraintGraph, Playground, anchor_movement_system, collision_avoidance_system, constraint_solving_system,
-    update_constraint_graph, verlet_integration_system,
+    fabrik_solving_system, limb_builder_system, update_constraint_graph, verlet_integration_system,
 };
 use tools::*;
 use visuals::*;
+use mesh::*;
 
 /// Plugin for editor visualization and interaction systems.
 pub struct EditorPlugin;
@@ -29,7 +31,7 @@ impl Plugin for EditorPlugin {
         app.init_resource::<EdgeCreationState>();
         app.init_resource::<CameraState>();
 
-        app.add_systems(Startup, (spawn_playground_visual, spawn_skin_visual));
+        app.add_systems(Startup, (spawn_playground_visual, spawn_skin_visual, spawn_limb_visual));
         app.add_systems(
             PostUpdate,
             (
@@ -40,6 +42,7 @@ impl Plugin for EditorPlugin {
                 sync_playground_visual,
                 update_skin_chains,
                 sync_skin_visual,
+                sync_limb_visual,
                 update_node_visibility,
                 update_debug_visibility,
                 update_edge_visibility,
@@ -66,9 +69,11 @@ impl Plugin for EditorPlugin {
             Update,
             (
                 update_constraint_graph,
+                limb_builder_system,
                 anchor_movement_system,
                 verlet_integration_system,
                 constraint_solving_system,
+                fabrik_solving_system,
                 collision_avoidance_system,
                 update_selection_visuals,
             )

@@ -2,7 +2,8 @@
 
 use bevy::prelude::*;
 
-use super::mesh::{create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
+use crate::editor::mesh::primitives::{create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
+use crate::core::components::LimbSet;
 use crate::core::{Node, NodeType};
 use crate::editor::components::{
     ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
@@ -13,7 +14,7 @@ use crate::ui::state::DisplaySettings;
 pub fn get_node_color(node_type: NodeType) -> Color {
     match node_type {
         NodeType::Anchor => ANCHOR_NODE_COLOR,
-        NodeType::Leg => LEG_NODE_COLOR,
+        NodeType::Limb => LEG_NODE_COLOR,
         NodeType::Normal => NORMAL_NODE_COLOR,
     }
 }
@@ -80,7 +81,7 @@ pub fn spawn_node_visuals(
 pub fn sync_node_visuals(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut node_query: Query<(&Node, &mut Transform, &Children), Changed<Node>>,
+    mut node_query: Query<(&Node, &mut Transform, &Children, Option<&LimbSet>), Changed<Node>>,
     mut visual_query: Query<&mut Mesh2d, With<NodeVisual>>,
     mut contact_query: Query<
         &mut Transform,
@@ -138,11 +139,12 @@ pub fn sync_node_visuals(
     >,
     visual_material_query: Query<&MeshMaterial2d<ColorMaterial>>,
 ) {
-    for (node, mut transform, children) in node_query.iter_mut() {
+    for (node, mut transform, children, limb_set) in node_query.iter_mut() {
         transform.translation.x = node.position.x;
         transform.translation.y = node.position.y;
 
         let is_anchor = node.node_type == NodeType::Anchor;
+        let show_target = is_anchor || limb_set.is_some();
         let look_angle = node.chain_angle;
         let right_offset = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * node.radius;
         let left_offset = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * node.radius;
@@ -153,20 +155,30 @@ pub fn sync_node_visuals(
 
             if let Ok(mat_handle) = visual_material_query.get(child) {
                 if let Some(material) = materials.get_mut(mat_handle.0.id()) {
-                    if eye_children.contains(child) {
+                    if let Ok(_) = visual_query.get(child) {
+                        if limb_set.is_some() {
+                             material.color = Color::srgb(0.6, 0.2, 0.8);
+                        } else {
+                            match node.node_type {
+                                NodeType::Anchor => material.color = ANCHOR_NODE_COLOR,
+                                NodeType::Limb => material.color = LEG_NODE_COLOR,
+                                NodeType::Normal => material.color = NORMAL_NODE_COLOR,
+                            }
+                        }
+                    } else if eye_children.contains(child) {
                         material.color = if is_anchor {
                             EYE_COLOR
                         } else {
                             EYE_COLOR.with_alpha(0.0)
                         };
                     } else if target_children.contains(child) {
-                        material.color = if is_anchor {
-                            TARGET_MARKER_COLOR
+                        material.color = if show_target {
+                             TARGET_MARKER_COLOR
                         } else {
                             TARGET_MARKER_COLOR.with_alpha(0.0)
                         };
                     } else if dir_children.contains(child) {
-                        material.color = if is_anchor {
+                        material.color = if show_target {
                             DIRECTION_VECTOR_COLOR
                         } else {
                             DIRECTION_VECTOR_COLOR.with_alpha(0.0)
@@ -179,26 +191,38 @@ pub fn sync_node_visuals(
         let offsets = [right_offset, left_offset];
         sync_contact_positions(children, &offsets, &contact_children, &mut contact_query);
 
-        if is_anchor {
-            let eye_dist = node.radius * EYE_DISTANCE_RATIO;
-            let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
-            let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
-            let eye_offsets = [r_eye, l_eye];
-            sync_eye_positions(children, &eye_offsets, &eye_children, &mut eye_query);
+        if is_anchor || show_target {
+            if is_anchor {
+                let eye_dist = node.radius * EYE_DISTANCE_RATIO;
+                let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
+                let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+                let eye_offsets = [r_eye, l_eye];
+                sync_eye_positions(children, &eye_offsets, &eye_children, &mut eye_query);
+            }
+            
+            let target_pos = if let Some(ls) = limb_set {
+                ls.limbs.first().map(|l| l.target).unwrap_or(node.target_position)
+            } else {
+                node.target_position
+            };
+
             sync_target_position_marker(
                 children,
-                node.target_position,
+                target_pos,
                 node.position,
                 &target_children,
                 &mut target_query,
             );
-            sync_direction_vector(
-                children,
-                node.target_position,
-                node.position,
-                &dir_children,
-                &mut dir_query,
-            );
+            
+            if is_anchor {
+                sync_direction_vector(
+                    children,
+                    node.target_position,
+                    node.position,
+                    &dir_children,
+                    &mut dir_query,
+                );
+            }
         }
     }
 }

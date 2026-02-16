@@ -10,6 +10,7 @@ use super::widgets::{
     HamburgerButton, ImportButton, InspectorPanel, InspectorTitle, InstructionOverlayRoot, PageIconButton, PageIconFor,
     PanelBody, PlaybackAction, PlaybackButton, RightSidebarRoot, ToolBarRoot, ToolButton, ToolButtonFor,
 };
+use crate::core::components::LimbSet;
 use crate::core::{
     DistanceConstraint, Node as SimNode, build_scene_data, export_to_file, import_from_file, spawn_scene_data,
 };
@@ -108,10 +109,10 @@ pub fn handle_import_click(
     query: Query<&Interaction, (Changed<Interaction>, With<ImportButton>)>,
     existing_nodes: Query<Entity, With<SimNode>>,
     existing_constraints: Query<Entity, With<DistanceConstraint>>,
-    existing_visuals: Query<Entity, With<NodeVisual>>,
+    mut selection: ResMut<Selection>,
+    _existing_visuals: Query<Entity, With<NodeVisual>>,
     existing_con_visuals: Query<Entity, With<ConstraintVisual>>,
     existing_previews: Query<Entity, With<ConstraintPreview>>,
-    mut selection: ResMut<Selection>,
 ) {
     for interaction in &query {
         if *interaction != Interaction::Pressed {
@@ -147,10 +148,11 @@ pub fn handle_export_click(
     query: Query<&Interaction, (Changed<Interaction>, With<ExportButton>)>,
     nodes: Query<(Entity, &mut SimNode)>,
     constraints: Query<(Entity, &DistanceConstraint)>,
+    mut limb_sets: Query<(Entity, &mut LimbSet)>,
 ) {
     for interaction in &query {
         if *interaction == Interaction::Pressed {
-            let scene = build_scene_data(&nodes, &constraints);
+            let scene = build_scene_data(&nodes, &constraints, &mut limb_sets);
             export_to_file(&scene);
         }
     }

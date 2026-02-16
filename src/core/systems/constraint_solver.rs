@@ -58,17 +58,24 @@ fn build_chains(
     let starts = find_chain_starts(adj, nodes);
 
     for &start in &starts {
+        if is_limb_node(start, nodes) {
+            continue;
+        }
+
         if is_visited(&visited, start) {
             continue;
         }
 
         let neighbors = adj.get(&start).unwrap();
         for &(next, rest_len) in neighbors {
+            if is_limb_node(next, nodes) {
+                continue;
+            }
             if is_visited(&visited, next) {
                 continue;
             }
 
-            if let Some(chain) = build_chain_from_endpoint(start, next, rest_len, adj, &mut visited) {
+            if let Some(chain) = build_chain_from_endpoint(start, next, rest_len, adj, &mut visited, nodes) {
                 if chain.len() >= 2 {
                     chains.push(chain);
                 }
@@ -76,7 +83,7 @@ fn build_chains(
         }
     }
 
-    collect_cycles(adj, &mut visited, &mut chains);
+    collect_cycles(adj, &mut visited, &mut chains, nodes);
 
     let standalone = find_standalone_constraints(constraints, &visited);
 
@@ -106,6 +113,13 @@ fn is_anchor_node(entity: Entity, nodes: &Query<&mut Node>) -> bool {
         .unwrap_or(false)
 }
 
+fn is_limb_node(entity: Entity, nodes: &Query<&mut Node>) -> bool {
+    nodes
+        .get(entity)
+        .map(|n| n.node_type == NodeType::Limb)
+        .unwrap_or(false)
+}
+
 fn is_leaf_node(neighbors: &[(Entity, f32)]) -> bool {
     neighbors.len() == 1
 }
@@ -120,6 +134,7 @@ fn build_chain_from_endpoint(
     rest_len: f32,
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
     visited: &mut HashMap<Entity, bool>,
+    nodes: &Query<&mut Node>,
 ) -> Option<Vec<ChainLink>> {
     let mut chain: Vec<ChainLink> = vec![ChainLink {
         entity: start,
@@ -133,8 +148,14 @@ fn build_chain_from_endpoint(
     loop {
         let cur_neighbors = adj.get(&current)?;
 
-        if is_middle_of_chain(cur_neighbors) {
-            let (next_node, next_rest) = find_next_neighbor(cur_neighbors, prev);
+        let non_limb_neighbors: Vec<(Entity, f32)> = cur_neighbors
+            .iter()
+            .filter(|(e, _)| !is_limb_node(*e, nodes))
+            .copied()
+            .collect();
+
+        if is_middle_of_chain(&non_limb_neighbors) {
+            let (next_node, next_rest) = find_next_neighbor(&non_limb_neighbors, prev);
             chain.push(ChainLink {
                 entity: current,
                 rest_length: next_rest,
@@ -171,13 +192,18 @@ fn collect_cycles(
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
     visited: &mut HashMap<Entity, bool>,
     chains: &mut Vec<Vec<ChainLink>>,
+    nodes: &Query<&mut Node>,
 ) {
     for (&start, _) in adj {
         if is_visited(visited, start) {
             continue;
         }
+        if is_limb_node(start, nodes) {
+            visited.insert(start, true);
+            continue;
+        }
 
-        if let Some(chain) = build_cycle_chain(start, adj, visited) {
+        if let Some(chain) = build_cycle_chain(start, adj, visited, nodes) {
             if chain.len() >= 2 {
                 chains.push(chain);
             }
@@ -189,6 +215,7 @@ fn build_cycle_chain(
     start: Entity,
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
     visited: &mut HashMap<Entity, bool>,
+    nodes: &Query<&mut Node>,
 ) -> Option<Vec<ChainLink>> {
     let mut chain: Vec<ChainLink> = Vec::new();
     let mut current = start;
@@ -196,7 +223,18 @@ fn build_cycle_chain(
 
     loop {
         let neighbors = adj.get(&current)?;
-        let (next_node, rest_len) = select_cycle_neighbor(neighbors, prev);
+        let non_limb: Vec<(Entity, f32)> = neighbors
+            .iter()
+            .filter(|(e, _)| !is_limb_node(*e, nodes))
+            .copied()
+            .collect();
+
+        if non_limb.is_empty() {
+            visited.insert(current, true);
+            break;
+        }
+
+        let (next_node, rest_len) = select_cycle_neighbor(&non_limb, prev);
 
         chain.push(ChainLink {
             entity: current,
@@ -222,8 +260,10 @@ fn select_cycle_neighbor(neighbors: &[(Entity, f32)], prev: Entity) -> (Entity, 
     if prev == Entity::PLACEHOLDER || neighbors[0].0 == prev {
         if prev == Entity::PLACEHOLDER {
             neighbors[0]
-        } else {
+        } else if neighbors.len() > 1 {
             neighbors[1]
+        } else {
+            neighbors[0]
         }
     } else {
         neighbors[0]
@@ -275,12 +315,13 @@ fn resolve_chain_link(
     prev_angle: f32,
     nodes: &mut Query<&mut Node>,
 ) -> Option<(f32, Vec2)> {
-    let (cur_pos, is_anchor, angle_constraint) = {
+    let (cur_pos, is_fixed, angle_constraint) = {
         let node = nodes.get(link.entity).ok()?;
-        (node.position, node.node_type == NodeType::Anchor, node.angle_constraint)
+        let fixed = node.node_type == NodeType::Anchor || node.node_type == NodeType::Limb;
+        (node.position, fixed, node.angle_constraint)
     };
 
-    if is_anchor {
+    if is_fixed {
         handle_anchor_in_chain(link.entity, cur_pos, prev_pos, nodes)
     } else {
         handle_movable_in_chain(
@@ -384,7 +425,13 @@ fn calculate_position_correction(delta: Vec2, dist: f32, rest_length: f32) -> Ve
 }
 
 fn calculate_constraint_weights(type_a: NodeType, type_b: NodeType) -> (f32, f32) {
-    match (type_a == NodeType::Anchor, type_b == NodeType::Anchor) {
+    if type_a == NodeType::Limb || type_b == NodeType::Limb {
+        return (0.0, 0.0);
+    }
+
+    let a_fixed = type_a == NodeType::Anchor;
+    let b_fixed = type_b == NodeType::Anchor;
+    match (a_fixed, b_fixed) {
         (true, true) => (0.0, 0.0),
         (true, false) => (0.0, 1.0),
         (false, true) => (1.0, 0.0),

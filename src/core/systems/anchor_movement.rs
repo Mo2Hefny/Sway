@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use std::collections::HashMap;
 
 use crate::core::components::{AnchorMovementMode, Node, NodeType, Playground, ProceduralPathType};
 use crate::core::constants::*;
@@ -24,6 +25,15 @@ pub fn anchor_movement_system(
     let mouse_world = get_mouse_world_position(&window_query, &camera_query);
 
     let all_nodes: Vec<(Entity, Vec2, f32)> = anchors.iter().map(|(e, n)| (e, n.position, n.radius)).collect();
+    
+    let mut child_positions: HashMap<Entity, Vec2> = HashMap::new();
+    for (entity, node) in anchors.iter() {
+        if let Some(neighbors) = graph.adjacency.get(&entity) {
+            if let Some(&(child_entity, _)) = neighbors.first() {
+                child_positions.insert(entity, node.position);
+            }
+        }
+    }
 
     for (entity, mut node) in anchors.iter_mut() {
         if node.node_type != NodeType::Anchor {
@@ -37,13 +47,13 @@ pub fn anchor_movement_system(
             AnchorMovementMode::FollowTarget => {
                 if let Some(target) = mouse_world {
                     node.target_position = target;
-                    move_toward_target(&mut node);
+                    move_toward_target(entity, &mut node, &graph, &child_positions);
                 }
             }
             AnchorMovementMode::Procedural => {
                 let dt = time.delta_secs();
                 update_procedural_target(entity, &mut node, total_time, dt, &playground, &graph, &all_nodes);
-                move_toward_target(&mut node);
+                move_toward_target(entity, &mut node, &graph, &child_positions);
             }
         }
     }
@@ -53,7 +63,12 @@ pub fn anchor_movement_system(
 // Private Methods
 // =============================================================================
 
-fn move_toward_target(node: &mut Node) {
+fn move_toward_target(
+    entity: Entity,
+    node: &mut Node,
+    graph: &ConstraintGraph,
+    child_positions: &HashMap<Entity, Vec2>,
+) {
     let direction = node.target_position - node.position;
     let distance = direction.length();
 
@@ -61,7 +76,25 @@ fn move_toward_target(node: &mut Node) {
         return;
     }
 
-    node.chain_angle = direction.to_angle() + std::f32::consts::PI;
+    let desired_angle = direction.to_angle() + std::f32::consts::PI;
+    
+    if let Some(neighbors) = graph.adjacency.get(&entity) {
+        if let Some(&(child_entity, _)) = neighbors.first() {
+            if let Some(&child_pos) = child_positions.get(&child_entity) {
+                let current_chain_angle = (child_pos - node.position).to_angle();
+                let angle_diff = normalize_angle(desired_angle - current_chain_angle);
+                let clamped_diff = angle_diff.clamp(-node.angle_constraint, node.angle_constraint);
+                node.chain_angle = normalize_angle(current_chain_angle + clamped_diff);
+            } else {
+                node.chain_angle = desired_angle;
+            }
+        } else {
+            node.chain_angle = desired_angle;
+        }
+    } else {
+        node.chain_angle = desired_angle;
+    }
+    
     let step_size = node.movement_speed.min(distance);
     let step = direction.normalize() * step_size;
 

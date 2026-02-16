@@ -6,13 +6,22 @@ use crate::ui::state::PlaybackState;
 
 pub fn update_constraint_graph(
     playback: Res<PlaybackState>,
-    constraints: Query<&DistanceConstraint>,
+    constraints: Query<&DistanceConstraint, Changed<DistanceConstraint>>,
+    all_constraints: Query<&DistanceConstraint>,
     mut graph: ResMut<ConstraintGraph>,
+    mut has_built: Local<bool>,
 ) {
     if !playback.is_playing() {
+        *has_built = false;
         return;
     }
 
-    let constraint_list: Vec<DistanceConstraint> = constraints.iter().cloned().collect();
+    let should_rebuild = !*has_built || !constraints.is_empty();
+    if !should_rebuild {
+        return;
+    }
+
+    *has_built = true;
+    let constraint_list: Vec<DistanceConstraint> = all_constraints.iter().cloned().collect();
     graph.rebuild(&constraint_list);
 }

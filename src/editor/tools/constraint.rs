@@ -6,7 +6,7 @@ use super::input::{cursor_world_pos, pick_node_at};
 use crate::core::{DistanceConstraint, Node as SimNode};
 use crate::editor::components::{ConstraintPreview, Selectable};
 use crate::editor::constants::*;
-use crate::editor::visuals::mesh::create_dashed_line_mesh;
+use crate::editor::mesh::primitives::create_dashed_line_mesh;
 use crate::ui::state::{EditorTool, EditorToolState, InputState};
 
 /// Tracks the in-progress edge creation state.
