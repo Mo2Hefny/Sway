@@ -7,7 +7,7 @@ use bevy_egui::{EguiContexts, EguiTextureHandle, egui};
 use crate::core::constants::{MAX_CONSTRAINT_DISTANCE, MIN_CONSTRAINT_DISTANCE};
 use crate::core::{
     AnchorMovementMode, DistanceConstraint, Node as SimNode, NodeType, Playground, ProceduralPathType,
-    build_scene_data, export_to_file, import_from_file, spawn_scene_data,
+    build_scene_data, export_to_file, import_from_file, spawn_scene_data, PendingFileOp,
 };
 use crate::editor::components::{ConstraintPreview, ConstraintVisual, NodeVisual};
 use crate::editor::tools::selection::Selection;
@@ -496,13 +496,15 @@ pub fn toggle_playback_control(
 pub fn apply_editor_actions(
     mut commands: Commands,
     mut import_requested: ResMut<ImportRequested>,
+    mut pending_file_op: ResMut<PendingFileOp>,
     mut pending_actions: ResMut<PendingConstraintActions>,
     mut selection: ResMut<Selection>,
     node_query: Query<(Entity, &mut SimNode)>,
     mut constraint_query: Query<(Entity, &mut DistanceConstraint)>,
     visual_entities: Query<Entity, Or<(With<NodeVisual>, With<ConstraintVisual>, With<ConstraintPreview>)>>,
 ) {
-    if let Some(scene) = import_requested.0.take() {
+    let scene_to_import = import_requested.0.take().or(pending_file_op.import_data.take());
+    if let Some(scene) = scene_to_import {
         selection.deselect();
         for e in visual_entities.iter() {
             commands.entity(e).despawn();

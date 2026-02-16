@@ -40,7 +40,12 @@ impl Plugin for AppPlugin {
         ));
 
         // Add Sway plugins in *dependency order*
-        app.add_plugins((EguiPlugin::default(), editor::EditorPlugin, ui::UiPlugin));
+        app.add_plugins((
+            EguiPlugin::default(),
+            core::CorePlugin,
+            editor::EditorPlugin,
+            ui::UiPlugin,
+        ));
 
         app.add_systems(Startup, spawn_camera);
         app.add_systems(Update, make_visible);

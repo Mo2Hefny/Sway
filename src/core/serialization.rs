@@ -5,6 +5,16 @@ use serde::{Deserialize, Serialize};
 
 use super::components::{DistanceConstraint, Limb, LimbSet, Node};
 
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local;
+
+#[derive(Resource, Default)]
+pub struct PendingFileOp {
+    pub import_data: Option<SceneData>,
+    pub export_requested: bool,
+    pub export_data: Option<SceneData>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ConstraintData {
     pub node_a: usize,
@@ -48,6 +58,16 @@ pub struct SceneData {
     pub limb_sets: Vec<LimbSetData>,
 }
 
+static IMPORT_CHANNEL: std::sync::LazyLock<
+    (
+        std::sync::mpsc::Sender<SceneData>,
+        std::sync::Mutex<std::sync::mpsc::Receiver<SceneData>>,
+    ),
+> = std::sync::LazyLock::new(|| {
+    let (tx, rx) = std::sync::mpsc::channel();
+    (tx, std::sync::Mutex::new(rx))
+});
+
 pub fn build_scene_data(
     nodes: &Query<(Entity, &mut Node)>,
     constraints: &Query<(Entity, &DistanceConstraint)>,
@@ -72,17 +92,77 @@ pub fn spawn_scene_data(commands: &mut Commands, scene: &SceneData) -> Vec<Entit
 }
 
 pub fn export_to_file(scene: &SceneData) {
-    if let Some(path) = request_save_path() {
-        match serialize_scene(scene) {
-            Ok(json) => write_scene_to_file(&path, &json),
-            Err(e) => error!("Failed to serialize scene: {e}"),
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if let Some(path) = rfd::FileDialog::new()
+            .add_filter("Sway Scene", &["json"])
+            .set_file_name("scene.json")
+            .save_file()
+        {
+            match serialize_scene(scene) {
+                Ok(json) => {
+                    if let Err(e) = std::fs::write(&path, json) {
+                        error!("Failed to write scene file: {e}");
+                    } else {
+                        info!("Scene exported to {}", path.display());
+                    }
+                }
+                Err(e) => error!("Failed to serialize scene: {e}"),
+            }
         }
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        let json = serialize_scene(scene).unwrap_or_default();
+        spawn_local(async move {
+            if let Some(file_handle) = rfd::AsyncFileDialog::new()
+                .add_filter("Sway Scene", &["json"])
+                .set_file_name("scene.json")
+                .save_file()
+                .await
+            {
+                let _ = file_handle.write(json.as_bytes()).await;
+                info!("Scene exported to {}", file_handle.file_name());
+            }
+        });
     }
 }
 
 pub fn import_from_file() -> Option<SceneData> {
-    let path = request_load_path()?;
-    read_scene_from_file(&path)
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let path = rfd::FileDialog::new()
+            .add_filter("Sway Scene", &["json"])
+            .pick_file()?;
+        read_scene_from_file(&path)
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        spawn_local(async {
+            if let Some(file_handle) = rfd::AsyncFileDialog::new()
+                .add_filter("Sway Scene", &["json"])
+                .pick_file()
+                .await
+            {
+                let data = file_handle.read().await;
+                if let Ok(json) = std::str::from_utf8(&data) {
+                    if let Ok(scene) = serde_json::from_str::<SceneData>(json) {
+                        let _ = IMPORT_CHANNEL.0.send(scene);
+                    }
+                }
+            }
+        });
+        None
+    }
+}
+
+/// System to poll for async file imports and update PendingFileOp.
+pub fn sync_pending_imports(mut pending_op: ResMut<PendingFileOp>) {
+    if let Ok(rx) = IMPORT_CHANNEL.1.lock() {
+        while let Ok(scene) = rx.try_recv() {
+            pending_op.import_data = Some(scene);
+        }
+    }
 }
 
 // =============================================================================
@@ -220,27 +300,8 @@ fn spawn_limb_sets(commands: &mut Commands, scene: &SceneData, node_entities: &[
     }
 }
 
-fn request_save_path() -> Option<std::path::PathBuf> {
-    rfd::FileDialog::new()
-        .add_filter("Sway Scene", &["json"])
-        .set_file_name("scene.json")
-        .save_file()
-}
-
-fn request_load_path() -> Option<std::path::PathBuf> {
-    rfd::FileDialog::new().add_filter("Sway Scene", &["json"]).pick_file()
-}
-
 fn serialize_scene(scene: &SceneData) -> Result<String, serde_json::Error> {
     serde_json::to_string_pretty(scene)
-}
-
-fn write_scene_to_file(path: &std::path::Path, json: &str) {
-    if let Err(e) = std::fs::write(path, json) {
-        error!("Failed to write scene file: {e}");
-    } else {
-        info!("Scene exported to {}", path.display());
-    }
 }
 
 fn read_scene_from_file(path: &std::path::Path) -> Option<SceneData> {
@@ -265,3 +326,4 @@ fn parse_scene(json: &str, path: &std::path::Path) -> Option<SceneData> {
         }
     }
 }
+
