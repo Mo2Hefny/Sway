@@ -9,7 +9,9 @@ use crate::core::components::LimbSet;
 use crate::ui::state::*;
 use crate::ui::theme::palette::*;
 use crate::ui::messages::*;
-use crate::ui::icons::{EguiIconTextures, to_egui_color};
+use crate::ui::constants::*;
+use crate::ui::theme::*;
+use crate::ui::icons::EguiIconTextures;
 
 pub fn draw_floating_panel(
     ctx: &egui::Context,
@@ -27,9 +29,9 @@ pub fn draw_floating_panel(
     let left = screen.min.x;
     let top = screen.min.y;
 
-    let panel_x = left + 16.0;
-    let panel_y = top + 16.0;
-    let floating_panel_w = if panel_state.collapsed { 56.0 } else { 240.0 };
+    let panel_x = left + PANEL_INNER_MARGIN;
+    let panel_y = top + PANEL_INNER_MARGIN;
+    let floating_panel_w = if panel_state.collapsed { FLOATING_PANEL_WIDTH_COLLAPSED } else { FLOATING_PANEL_WIDTH };
     let surface = to_egui_color(SURFACE);
 
     egui::Area::new(egui::Id::new("floating_panel"))
@@ -37,81 +39,86 @@ pub fn draw_floating_panel(
         .order(egui::Order::Foreground)
         .constrain(true)
         .show(ctx, |ui| {
-            ui.set_min_width(floating_panel_w);
-            let frame = egui::Frame::new()
-                .fill(surface)
-                .inner_margin(egui::Margin::same(12))
-                .corner_radius(4.0);
-            frame.show(ui, |ui| {
-                ui.style_mut().spacing.item_spacing = egui::vec2(8.0, 8.0);
+            ui.allocate_ui(egui::vec2(floating_panel_w, 0.0), |ui| {
+                let frame = egui::Frame::new()
+                    .fill(surface)
+                    .inner_margin(egui::Margin::same(FLOATING_PANEL_INNER_MARGIN as i8))
+                    .corner_radius(PANEL_CORNER_RADIUS);
+                frame.show(ui, |ui| {
+                    ui.style_mut().spacing.item_spacing = egui::vec2(PANEL_ITEM_SPACING, PANEL_ITEM_SPACING);
 
-                // Header: hamburger
-                let hamburger_btn = if let Some(tid) = icons.hamburger {
-                    ui.add_sized(
-                        egui::vec2(32.0, 32.0),
-                        egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
-                            tid,
-                            egui::vec2(18.0, 18.0),
-                        )))
-                        .fill(surface),
-                    )
-                } else {
-                    ui.add_sized(egui::vec2(32.0, 32.0), egui::Button::new("≡").fill(surface))
-                };
-                if hamburger_btn.clicked() {
-                    panel_state.collapsed = !panel_state.collapsed;
-                }
+                    let hamburger_btn = if let Some(tid) = icons.hamburger {
+                        ui.add_sized(
+                            egui::vec2(HAMBURGER_BTN_SIZE, HAMBURGER_BTN_SIZE),
+                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                tid,
+                                egui::vec2(HAMBURGER_ICON_SIZE, HAMBURGER_ICON_SIZE),
+                            )))
+                            .fill(surface),
+                        )
+                    } else {
+                        ui.add_sized(
+                            egui::vec2(HAMBURGER_BTN_SIZE, HAMBURGER_BTN_SIZE),
+                            egui::Button::new("≡").fill(surface),
+                        )
+                    };
+                    if hamburger_btn.clicked() {
+                        panel_state.collapsed = !panel_state.collapsed;
+                    }
 
-                if !panel_state.collapsed {
-                    ui.add_space(8.0);
-                    let mut skin = display_settings.show_skin;
-                    if ui.checkbox(&mut skin, LABEL_SHOW_SKIN).changed() {
-                        display_settings.show_skin = skin;
-                    }
-                    let mut edge = display_settings.show_edge;
-                    if ui.checkbox(&mut edge, LABEL_SHOW_EDGE).changed() {
-                        display_settings.show_edge = edge;
-                    }
-                    let mut nodes = display_settings.show_nodes;
-                    if ui.checkbox(&mut nodes, LABEL_SHOW_NODES).changed() {
-                        display_settings.show_nodes = nodes;
-                    }
-                    let mut debug = display_settings.show_debug;
-                    if ui.checkbox(&mut debug, LABEL_SHOW_DEBUG).changed() {
-                        display_settings.show_debug = debug;
-                    }
-                    ui.add_space(16.0);
-                    if ui.button(BTN_IMPORT).clicked() {
-                        if let Some(scene) = import_from_file() {
-                            import_requested.0 = Some(scene);
+                    if !panel_state.collapsed {
+                        ui.add_space(PANEL_TITLE_SPACING);
+                        let mut skin = display_settings.show_skin;
+                        if ui.checkbox(&mut skin, LABEL_SHOW_SKIN).changed() {
+                            display_settings.show_skin = skin;
                         }
+                        let mut edge = display_settings.show_edge;
+                        if ui.checkbox(&mut edge, LABEL_SHOW_EDGE).changed() {
+                            display_settings.show_edge = edge;
+                        }
+                        let mut nodes = display_settings.show_nodes;
+                        if ui.checkbox(&mut nodes, LABEL_SHOW_NODES).changed() {
+                            display_settings.show_nodes = nodes;
+                        }
+                        let mut debug = display_settings.show_debug;
+                        if ui.checkbox(&mut debug, LABEL_SHOW_DEBUG).changed() {
+                            display_settings.show_debug = debug;
+                        }
+                        ui.add_space(PANEL_SECTION_SPACING);
+                        if ui.button(BTN_IMPORT).clicked() {
+                            if let Some(scene) = import_from_file() {
+                                import_requested.0 = Some(scene);
+                            }
+                        }
+                        if ui.button(BTN_EXPORT).clicked() {
+                            let scene = build_scene_data(node_query, constraint_query, limb_set_query);
+                            export_to_file(&scene);
+                        }
+
+                        ui.add_space(PANEL_SECTION_SPACING);
+                        ui.separator();
+                        ui.add_space(PANEL_TITLE_SPACING);
+                        ui.label(egui::RichText::new(LABEL_PLAYGROUND_SIZE)
+                            .text_style(egui::TextStyle::Heading)
+                            .color(typography::heading_color()));
+
+                        let Ok(window) = windows.single() else { return };
+                        let aspect = window.width() / window.height();
+
+                        let mut half_height = playground.half_size.y;
+
+                        ui.vertical(|ui| {
+                            ui.label(egui::RichText::new(LABEL_HALF_HEIGHT).text_style(egui::TextStyle::Small).color(typography::subinfo_color()));
+                            if ui
+                                .add(egui::Slider::new(&mut half_height, PLAYGROUND_HALF_SIZE_RANGE))
+                                .changed()
+                            {
+                                let half_width = half_height * aspect;
+                                playground.half_size = Vec2::new(half_width, half_height);
+                            }
+                        });
                     }
-                    if ui.button(BTN_EXPORT).clicked() {
-                        let scene = build_scene_data(node_query, constraint_query, limb_set_query);
-                        export_to_file(&scene);
-                    }
-
-                    // Playground size slider
-                    ui.add_space(16.0);
-                    ui.separator();
-                    ui.add_space(8.0);
-                    ui.label(LABEL_PLAYGROUND_SIZE);
-
-                    // Aspect ratio logic
-                    let Ok(window) = windows.single() else { return };
-                    let aspect = window.width() / window.height();
-
-                    // Control half-height, derive half-width from aspect ratio
-                    let mut half_height = playground.half_size.y;
-
-                    if ui
-                        .add(egui::Slider::new(&mut half_height, 400.0..=2000.0).text("Half Size"))
-                        .changed()
-                    {
-                        let half_width = half_height * aspect;
-                        playground.half_size = Vec2::new(half_width, half_height);
-                    }
-                }
+                });
             });
         });
 }

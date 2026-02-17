@@ -141,15 +141,3 @@ impl EguiIconTextures {
     }
 }
 
-/// Converts Bevy Color to egui Color32.
-pub fn to_egui_color(c: Color) -> egui::Color32 {
-    use bevy::color::Srgba;
-    let srgba: Srgba = c.into();
-    let [r, g, b, a] = srgba.to_f32_array();
-    egui::Color32::from_rgba_unmultiplied(
-        (r * 255.0).round() as u8,
-        (g * 255.0).round() as u8,
-        (b * 255.0).round() as u8,
-        (a * 255.0).round() as u8,
-    )
-}

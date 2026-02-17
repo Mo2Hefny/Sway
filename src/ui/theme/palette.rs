@@ -7,6 +7,7 @@ pub const SURFACE: Color = Color::srgb(0.118, 0.137, 0.157);
 pub const SURFACE_HOVER: Color = Color::srgb(0.227, 0.259, 0.302);
 pub const SURFACE_PRESSED: Color = Color::srgb(0.290, 0.329, 0.376);
 pub const BORDER: Color = Color::srgb(0.353, 0.392, 0.439);
+pub const SEPARATOR: Color = Color::srgb(0.235, 0.235, 0.235);
 pub const TEXT: Color = Color::srgb(0.992, 1.000, 1.000);
 pub const TEXT_SECONDARY: Color = Color::srgb(0.671, 0.694, 0.733);
 pub const TEXT_DISABLED: Color = Color::srgb(0.416, 0.447, 0.502);

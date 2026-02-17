@@ -10,7 +10,9 @@ use crate::editor::tools::selection::Selection;
 use crate::ui::state::*;
 use crate::ui::theme::palette::*;
 use crate::ui::messages::*;
-use crate::ui::icons::{EguiIconTextures, to_egui_color};
+use crate::ui::constants::*;
+use crate::ui::theme::*;
+use crate::ui::icons::EguiIconTextures;
 
 pub fn draw_inspector_panel(
     ctx: &egui::Context,
@@ -28,8 +30,8 @@ pub fn draw_inspector_panel(
     let top = screen.min.y;
     let bottom = screen.max.y;
 
-    let icon_bar_w = 48.0;
-    let inspector_w = 280.0;
+    let icon_bar_w = ICON_BAR_WIDTH;
+    let inspector_w = INSPECTOR_WIDTH;
     let panel_height = bottom - top;
 
     let icon_bar_x = right - icon_bar_w;
@@ -47,12 +49,15 @@ pub fn draw_inspector_panel(
                 ui.allocate_ui(egui::vec2(inspector_w, panel_height), |ui| {
                     let frame = egui::Frame::new()
                         .fill(to_egui_color(SURFACE))
-                        .inner_margin(egui::Margin::same(16))
-                        .corner_radius(4.0);
+                        .inner_margin(egui::Margin::same(PANEL_INNER_MARGIN as i8))
+                        .corner_radius(PANEL_CORNER_RADIUS);
+                    
                     frame.show(ui, |ui| {
-                        ui.set_min_size(egui::vec2(inspector_w - 32.0, panel_height - 32.0));
-                        ui.heading(inspector_state.active_page.name());
-                        ui.add_space(16.0);
+                        ui.set_min_size(egui::vec2(inspector_w - PANEL_INNER_MARGIN * 2.0, panel_height - PANEL_INNER_MARGIN * 2.0));
+                        ui.label(egui::RichText::new(inspector_state.active_page.name())
+                            .text_style(egui::TextStyle::Heading)
+                            .color(typography::heading_color()));
+                        ui.add_space(PANEL_INNER_MARGIN);
                         inspector_content_ui(
                             ui,
                             selection,
@@ -66,6 +71,11 @@ pub fn draw_inspector_panel(
                             &mut node_deletes,
                         );
                     });
+
+                    let rect = ui.max_rect();
+                    let stroke = egui::Stroke::new(PANEL_SEPARATOR_WIDTH, to_egui_color(SEPARATOR));
+                    ui.painter().vline(rect.right(), rect.y_range(), stroke);
+                    ui.painter().vline(rect.left(), rect.y_range(), stroke);
                 });
             });
     }
@@ -82,11 +92,12 @@ pub fn draw_inspector_panel(
             ui.allocate_ui(egui::vec2(icon_bar_w, panel_height), |ui| {
                 let frame = egui::Frame::new()
                     .fill(to_egui_color(SURFACE))
-                    .inner_margin(egui::Margin::same(4))
-                    .corner_radius(4.0);
+                    .inner_margin(egui::Margin::same(ICON_BAR_INNER_MARGIN as i8))
+                    .corner_radius(PANEL_CORNER_RADIUS);
+                
                 frame.show(ui, |ui| {
-                    ui.set_min_size(egui::vec2(icon_bar_w - 8.0, panel_height - 8.0));
-                    ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 4.0);
+                    ui.set_min_size(egui::vec2(icon_bar_w - ICON_BAR_INNER_MARGIN * 2.0, panel_height - ICON_BAR_INNER_MARGIN * 2.0));
+                    ui.style_mut().spacing.item_spacing = egui::vec2(PANEL_ITEM_SPACING, PANEL_ITEM_SPACING);
                     let caret_id = if inspector_state.open {
                         icons.caret_right
                     } else {
@@ -94,15 +105,15 @@ pub fn draw_inspector_panel(
                     };
                     let caret_btn = match caret_id {
                         Some(tid) => ui.add_sized(
-                            egui::vec2(40.0, 40.0),
+                            egui::vec2(ICON_BAR_BTN_SIZE, ICON_BAR_BTN_SIZE),
                             egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
                                 tid,
-                                egui::vec2(24.0, 24.0),
+                                egui::vec2(ICON_BAR_ICON_SIZE, ICON_BAR_ICON_SIZE),
                             )))
                             .fill(to_egui_color(SURFACE)),
                         ),
                         None => ui.add_sized(
-                            egui::vec2(40.0, 40.0),
+                            egui::vec2(ICON_BAR_BTN_SIZE, ICON_BAR_BTN_SIZE),
                             egui::Button::new("◀").fill(to_egui_color(SURFACE)),
                         ),
                     };
@@ -128,20 +139,25 @@ pub fn draw_inspector_panel(
                         };
                         let page_btn = match icon {
                             Some(tid) => ui.add_sized(
-                                egui::vec2(40.0, 40.0),
+                                egui::vec2(ICON_BAR_BTN_SIZE, ICON_BAR_BTN_SIZE),
                                 egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
                                     tid,
-                                    egui::vec2(24.0, 24.0),
+                                    egui::vec2(ICON_BAR_ICON_SIZE, ICON_BAR_ICON_SIZE),
                                 )))
                                 .fill(fill),
                             ),
-                            None => ui.add_sized(egui::vec2(40.0, 40.0), egui::Button::new("").fill(fill)),
+                            None => ui.add_sized(egui::vec2(ICON_BAR_BTN_SIZE, ICON_BAR_BTN_SIZE), egui::Button::new("").fill(fill)),
                         };
                         if page_btn.clicked() {
                             inspector_state.active_page = page;
                         }
                     }
                 });
+
+                let rect = ui.max_rect();
+                let stroke = egui::Stroke::new(PANEL_SEPARATOR_WIDTH, to_egui_color(SEPARATOR));
+                ui.painter().vline(rect.left(), rect.y_range(), stroke);
+                ui.painter().vline(rect.right(), rect.y_range(), stroke);
             });
         });
 }
@@ -169,9 +185,11 @@ fn inspector_content_ui(
 
     match page {
         InspectorPage::Properties => {
-            ui.collapsing("Node Settings", |ui| {
+            ui.collapsing(egui::RichText::new(SECTION_NODE_SETTINGS)
+                    .text_style(egui::TextStyle::Heading)
+                    .color(typography::heading_color()), |ui| {
                 ui.horizontal(|ui| {
-                    ui.label("Node Type");
+                    ui.label(PROP_NODE_TYPE);
                     egui::ComboBox::from_id_salt("node_type")
                         .selected_text(node.node_type.name())
                         .show_ui(ui, |ui| {
@@ -195,71 +213,26 @@ fn inspector_content_ui(
                             }
                         });
                 });
-                ui.add_space(4.0);
-                ui.horizontal(|ui| {
-                    ui.label("Angle Limit");
+                ui.add_space(PANEL_ITEM_SPACING);
+                ui.vertical(|ui| {
+                    ui.label(PROP_ANGLE_LIMIT);
                     let mut angle_deg = node.angle_constraint.to_degrees();
-                    if ui.add(egui::Slider::new(&mut angle_deg, 0.0..=180.0)).changed() {
-                        node.angle_constraint = angle_deg.to_radians();
-                    }
-                    ui.label("°");
+                    ui.horizontal(|ui| {
+                        if ui.add(egui::Slider::new(&mut angle_deg, ANGLE_LIMIT_RANGE)).changed() {
+                            node.angle_constraint = angle_deg.to_radians();
+                        }
+                        ui.label("°");
+                    });
                 });
 
-                if let Ok((_e, mut limb_set)) = limb_set_query.get_mut(selected_entity) {
-                    let limb_count = limb_set.limbs.len();
-                    for (i, limb) in limb_set.limbs.iter_mut().enumerate() {
-                        ui.add_space(8.0);
-                        ui.separator();
-                        ui.add_space(8.0);
-                        let label = if limb_count == 1 {
-                            "Limb IK".to_string()
-                        } else {
-                            format!("Limb {} IK", i + 1)
-                        };
-                        ui.label(&label);
-                        ui.label(format!("Joints: {}", limb.joints.len()));
-                        ui.horizontal(|ui| {
-                            ui.label("Max Reach");
-                            ui.add(egui::Slider::new(&mut limb.max_reach, 10.0..=1000.0));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Angle Offset:");
-                            let mut deg = limb.target_direction_offset.to_degrees();
-                            if ui.add(egui::DragValue::new(&mut deg).speed(1.0).suffix("°")).changed() {
-                                limb.target_direction_offset = deg.to_radians();
-                            }
-                        });
-
-                        ui.heading("Stepping");
-                        ui.horizontal(|ui| {
-                            ui.label("Threshold:");
-                            ui.add(egui::DragValue::new(&mut limb.step_threshold).speed(0.1).range(0.0..=200.0));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Speed:");
-                            ui.add(egui::DragValue::new(&mut limb.step_speed).speed(0.1).range(0.1..=20.0));
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("Height:");
-                            ui.add(egui::DragValue::new(&mut limb.step_height).speed(0.1).range(0.0..=100.0));
-                        });
-                        
-                        ui.add_space(4.0);
-                        ui.label("Joint Flip:");
-                        for (j, flipped) in limb.flip_bend.iter_mut().enumerate() {
-                             ui.checkbox(flipped, format!("Joint {}", j + 1));
-                        }
-                    }
-                }
-
                 if node.node_type == NodeType::Anchor {
-                    ui.add_space(8.0);
+                    ui.add_space(PANEL_TITLE_SPACING);
                     ui.separator();
-                    ui.add_space(8.0);
+                    ui.add_space(PANEL_TITLE_SPACING);
 
                     // Movement Mode selector
                     ui.horizontal(|ui| {
-                        ui.label("Movement Mode");
+                        ui.label(PROP_MOVEMENT_MODE);
                         egui::ComboBox::from_id_salt("movement_mode")
                             .selected_text(node.movement_mode.name())
                             .show_ui(ui, |ui| {
@@ -300,15 +273,15 @@ fn inspector_content_ui(
                     match node.movement_mode {
                         AnchorMovementMode::None => { }
                         AnchorMovementMode::FollowTarget => {
-                            ui.horizontal(|ui| {
-                                ui.label("Movement Speed");
-                                ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
+                            ui.vertical(|ui| {
+                                ui.label(PROP_MOVEMENT_SPEED);
+                                ui.add(egui::Slider::new(&mut node.movement_speed, MOVEMENT_SPEED_RANGE));
                             });
                         }
                         AnchorMovementMode::Procedural => {
                             // Path Type selector
                             ui.horizontal(|ui| {
-                                ui.label("Path Type");
+                                ui.label(PROP_PATH_TYPE);
                                 egui::ComboBox::from_id_salt("path_type")
                                     .selected_text(match node.path_type {
                                         ProceduralPathType::Circle => "Circle",
@@ -337,65 +310,121 @@ fn inspector_content_ui(
                                     });
                             });
 
-                            ui.horizontal(|ui| {
-                                ui.label("Amplitude X");
-                                ui.add(egui::Slider::new(&mut node.path_amplitude.x, 10.0..=200.0));
+                            ui.vertical(|ui| {
+                                ui.label(PROP_AMPLITUDE_X);
+                                ui.add(egui::Slider::new(&mut node.path_amplitude.x, PATH_AMPLITUDE_RANGE));
                             });
 
-                            ui.horizontal(|ui| {
-                                ui.label("Amplitude Y");
-                                ui.add(egui::Slider::new(&mut node.path_amplitude.y, 10.0..=200.0));
+                            ui.vertical(|ui| {
+                                ui.label(PROP_AMPLITUDE_Y);
+                                ui.add(egui::Slider::new(&mut node.path_amplitude.y, PATH_AMPLITUDE_RANGE));
                             });
 
-                            ui.horizontal(|ui| {
-                                ui.label("Movement Speed");
-                                ui.add(egui::Slider::new(&mut node.movement_speed, 1.0..=50.0));
+                            ui.vertical(|ui| {
+                                ui.label(PROP_MOVEMENT_SPEED);
+                                ui.add(egui::Slider::new(&mut node.movement_speed, MOVEMENT_SPEED_RANGE));
                             });
 
-                            if ui.button("Set Center to Current Position").clicked() {
+                            if ui.button(BTN_SET_CENTER).clicked() {
                                 node.path_center = node.position;
                             }
                         }
                     }
                 }
             });
+            
+            if let Ok((_e, mut limb_set)) = limb_set_query.get_mut(selected_entity) {
+                ui.collapsing(egui::RichText::new(SECTION_LIMB_IK)
+                    .text_style(egui::TextStyle::Heading)
+                    .color(typography::heading_color()), |ui| {
+                    let limb_count = limb_set.limbs.len();
+                    for (i, limb) in limb_set.limbs.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            ui.label(egui::RichText::new(format!("{} #{}  |  {} {}", LABEL_LIMB, i + 1, LABEL_JOINTS, limb.joints.len()))
+                                .text_style(egui::TextStyle::Heading)
+                                .color(typography::heading_color()));
+                        });
+                        ui.vertical(|ui| {
+                            ui.label(PROP_MAX_REACH);
+                            ui.add(egui::Slider::new(&mut limb.max_reach, LIMB_MAX_REACH_RANGE));
+                        });
+                        ui.vertical(|ui| {
+                            ui.label(PROP_ANGLE_OFFSET);
+                            let mut deg = limb.target_direction_offset.to_degrees();
+                            if ui.add(egui::Slider::new(&mut deg, LIMB_ANGLE_OFFSET_RANGE).suffix("°")).changed() {
+                                limb.target_direction_offset = deg.to_radians();
+                            }
+                        });
 
-            ui.collapsing("Physics", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Collision Damp");
-                    ui.add(egui::Slider::new(&mut node.collision_damping, 0.0..=1.0));
+                        ui.label(egui::RichText::new(SECTION_STEPPING).text_style(egui::TextStyle::Body).strong());
+                        ui.horizontal(|ui| {
+                            ui.label(PROP_THRESHOLD);
+                            ui.add(egui::DragValue::new(&mut limb.step_threshold).speed(WIDGET_DRAG_SPEED_FINE).range(LIMB_STEP_THRESHOLD_RANGE));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label(PROP_SPEED);
+                            ui.add(egui::DragValue::new(&mut limb.step_speed).speed(WIDGET_DRAG_SPEED_FINE).range(LIMB_STEP_SPEED_RANGE));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label(PROP_HEIGHT);
+                            ui.add(egui::DragValue::new(&mut limb.step_height).speed(WIDGET_DRAG_SPEED_FINE).range(LIMB_STEP_HEIGHT_RANGE));
+                        });
+                        
+                        ui.add_space(PANEL_ITEM_SPACING);
+                        ui.label(PROP_JOINT_FLIP);
+                        for (j, flipped) in limb.flip_bend.iter_mut().enumerate() {
+                             ui.checkbox(flipped, format!("{} {}", LABEL_JOINT, j + 1));
+                        }
+                        
+                        if i < limb_count - 1 {
+                            ui.add_space(PANEL_TITLE_SPACING);
+                            ui.separator();
+                            ui.add_space(PANEL_TITLE_SPACING);
+                        }
+                    }
+                });
+            }
+
+            ui.collapsing(egui::RichText::new(SECTION_PHYSICS)
+                .text_style(egui::TextStyle::Heading)
+                .color(typography::heading_color()), |ui| {
+                ui.vertical(|ui| {
+                    ui.label(PROP_COLLISION_DAMP);
+                    ui.add(egui::Slider::new(&mut node.collision_damping, COLLISION_DAMPING_RANGE));
                 });
             });
 
-            ui.collapsing("Acceleration", |ui| {
-                ui.label("Constant");
+            ui.collapsing(egui::RichText::new(SECTION_ACCELERATION)
+                .text_style(egui::TextStyle::Heading)
+                .color(typography::heading_color()), |ui| {
+                ui.label(LABEL_ACCEL_CONSTANT);
                 ui.horizontal(|ui| {
                     ui.colored_label(to_egui_color(AXIS_X), "X");
-                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.x).speed(1.0));
-                    ui.add_space(8.0);
+                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.x).speed(WIDGET_DRAG_SPEED));
+                    ui.add_space(PANEL_TITLE_SPACING);
                     ui.colored_label(to_egui_color(AXIS_Y), "Y");
-                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.y).speed(1.0));
+                    ui.add(egui::DragValue::new(&mut node.constant_acceleration.y).speed(WIDGET_DRAG_SPEED));
                 });
 
-                ui.add_space(4.0);
-                ui.label("Live (Accumulated)");
+                ui.add_space(PANEL_ITEM_SPACING);
+                ui.label(LABEL_ACCEL_LIVE);
                 ui.horizontal(|ui| {
                     ui.colored_label(to_egui_color(AXIS_X), "X");
                     ui.label(format!("{:.2}", node.acceleration.x));
-                    ui.add_space(16.0);
+                    ui.add_space(PANEL_SECTION_SPACING);
                     ui.colored_label(to_egui_color(AXIS_Y), "Y");
                     ui.label(format!("{:.2}", node.acceleration.y));
                 });
             });
 
-            ui.add_space(8.0);
+            ui.add_space(PANEL_TITLE_SPACING);
             ui.separator();
-            ui.add_space(8.0);
+            ui.add_space(PANEL_TITLE_SPACING);
 
             let delete_btn = ui.add_sized(
-                [ui.available_width(), 32.0],
+                [ui.available_width(), ACTION_BTN_HEIGHT],
                 egui::Button::new(
-                    egui::RichText::new("Delete Node").color(to_egui_color(Color::srgba(1.0, 0.4, 0.4, 1.0))),
+                    egui::RichText::new(BTN_DELETE_NODE).color(to_egui_color(Color::srgba(1.0, 0.4, 0.4, 1.0))),
                 )
                 .fill(to_egui_color(Color::srgba(0.8, 0.2, 0.2, 0.1))),
             );
@@ -404,17 +433,21 @@ fn inspector_content_ui(
             }
         }
         InspectorPage::Transform => {
-            ui.collapsing("Position", |ui| {
+            ui.collapsing(egui::RichText::new(PROP_POSITION)
+                .text_style(egui::TextStyle::Heading)
+                .color(typography::heading_color()), |ui| {
                 ui.horizontal(|ui| {
                     ui.colored_label(to_egui_color(AXIS_X), "X");
-                    ui.add(egui::DragValue::new(&mut node.position.x).speed(1.0));
-                    ui.add_space(16.0);
+                    ui.add(egui::DragValue::new(&mut node.position.x).speed(WIDGET_DRAG_SPEED));
+                    ui.add_space(PANEL_SECTION_SPACING);
                     ui.colored_label(to_egui_color(AXIS_Y), "Y");
-                    ui.add(egui::DragValue::new(&mut node.position.y).speed(1.0));
+                    ui.add(egui::DragValue::new(&mut node.position.y).speed(WIDGET_DRAG_SPEED));
                 });
             });
-            ui.collapsing("Radius", |ui| {
-                ui.add(egui::Slider::new(&mut node.radius, 4.0..=50.0));
+            ui.collapsing(egui::RichText::new(PROP_RADIUS)
+                .text_style(egui::TextStyle::Heading)
+                .color(typography::heading_color()), |ui| {
+                ui.add(egui::Slider::new(&mut node.radius, NODE_RADIUS_RANGE));
             });
         }
         InspectorPage::Constraints => {

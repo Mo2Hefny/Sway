@@ -1,5 +1,6 @@
 //! Editor UI layout implemented with bevy_egui.
 
+pub mod constants;
 pub mod icons;
 pub mod messages;
 pub mod panels;

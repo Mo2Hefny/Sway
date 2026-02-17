@@ -15,8 +15,11 @@ pub struct Playground {
 
 impl Default for Playground {
     fn default() -> Self {
+        let height = 500.0;
+        let aspect = 16.0 / 9.0;
+        let width = height * aspect;
         Self {
-            half_size: Vec2::splat(400.0),
+            half_size: Vec2::new(width, height),
             border_margin: BORDER_MARGIN,
             stroke_width: STROKE_WIDTH,
             impact_damping: IMPACT_DAMPING,

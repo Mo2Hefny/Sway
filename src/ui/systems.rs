@@ -14,6 +14,7 @@ use crate::editor::tools::selection::Selection;
 use crate::ui::icons::{UiIcons, EguiIconTextures};
 use crate::ui::panels::*;
 use crate::ui::state::*;
+use crate::ui::theme::*;
 
 /// Main editor UI system: orchestrates all egui panels and updates InputState.
 pub fn editor_ui_system(
@@ -40,6 +41,7 @@ pub fn editor_ui_system(
 ) {
     egui_icons.ensure_registered(&mut contexts, &icons);
     let Ok(ctx) = contexts.ctx_mut() else { return };
+    apply_theme(ctx);
 
     if !ui_visibility.visible {
         input_state.cursor_over_ui = false;
