@@ -3,6 +3,7 @@
 use bevy::prelude::*;
 
 use super::messages::*;
+use crate::core::SceneData;
 
 /// Visibility toggles for editor elements.
 #[derive(Resource, Clone, Debug)]
@@ -61,6 +62,19 @@ impl Default for InspectorState {
         }
     }
 }
+
+/// When Some, a system in Update will clear the scene and spawn this data.
+#[derive(Resource, Default)]
+pub struct ImportRequested(pub Option<SceneData>);
+
+/// Pending constraint rest_length updates and deletions. Applied in Update after egui.
+#[derive(Resource, Default)]
+pub struct PendingConstraintActions {
+    pub updates: Vec<(Entity, f32)>,
+    pub deletes: Vec<Entity>,
+    pub node_deletes: Vec<Entity>,
+}
+
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub enum EditorTool {

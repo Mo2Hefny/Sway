@@ -1,8 +1,7 @@
-//! Icon loading and management.
-
 use bevy::asset::RenderAssetUsages;
 use bevy::image::Image;
 use bevy::prelude::*;
+use bevy_egui::{EguiContexts, EguiTextureHandle, egui};
 
 /// Handles to rasterized SVG icons.
 #[derive(Resource, Clone, Debug, Default)]
@@ -95,4 +94,62 @@ impl UiIcons {
 pub fn load_icons(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     let icons = UiIcons::load_all(&mut images);
     commands.insert_resource(icons);
+}
+
+/// Cached egui texture IDs for UI icons (registered on first use).
+#[derive(Resource, Default)]
+pub struct EguiIconTextures {
+    pub hamburger: Option<egui::TextureId>,
+    pub import: Option<egui::TextureId>,
+    pub export: Option<egui::TextureId>,
+    pub caret_right: Option<egui::TextureId>,
+    pub caret_left: Option<egui::TextureId>,
+    pub properties: Option<egui::TextureId>,
+    pub transform: Option<egui::TextureId>,
+    pub constraints: Option<egui::TextureId>,
+    pub cursor_tool: Option<egui::TextureId>,
+    pub add_node_tool: Option<egui::TextureId>,
+    pub add_edge_tool: Option<egui::TextureId>,
+    pub move_tool: Option<egui::TextureId>,
+    pub play: Option<egui::TextureId>,
+    pub pause: Option<egui::TextureId>,
+    pub stop: Option<egui::TextureId>,
+    pub checkmark: Option<egui::TextureId>,
+}
+
+impl EguiIconTextures {
+    pub fn ensure_registered(&mut self, contexts: &mut EguiContexts, icons: &UiIcons) {
+        if self.hamburger.is_some() {
+            return;
+        }
+        self.hamburger = Some(contexts.add_image(EguiTextureHandle::Strong(icons.hamburger.clone())));
+        self.import = Some(contexts.add_image(EguiTextureHandle::Strong(icons.import.clone())));
+        self.export = Some(contexts.add_image(EguiTextureHandle::Strong(icons.export.clone())));
+        self.caret_right = Some(contexts.add_image(EguiTextureHandle::Strong(icons.caret_right.clone())));
+        self.caret_left = Some(contexts.add_image(EguiTextureHandle::Strong(icons.caret_left.clone())));
+        self.properties = Some(contexts.add_image(EguiTextureHandle::Strong(icons.properties.clone())));
+        self.transform = Some(contexts.add_image(EguiTextureHandle::Strong(icons.transform.clone())));
+        self.constraints = Some(contexts.add_image(EguiTextureHandle::Strong(icons.constraints.clone())));
+        self.cursor_tool = Some(contexts.add_image(EguiTextureHandle::Strong(icons.cursor_tool.clone())));
+        self.add_node_tool = Some(contexts.add_image(EguiTextureHandle::Strong(icons.add_node_tool.clone())));
+        self.add_edge_tool = Some(contexts.add_image(EguiTextureHandle::Strong(icons.add_edge_tool.clone())));
+        self.move_tool = Some(contexts.add_image(EguiTextureHandle::Strong(icons.move_tool.clone())));
+        self.play = Some(contexts.add_image(EguiTextureHandle::Strong(icons.play.clone())));
+        self.pause = Some(contexts.add_image(EguiTextureHandle::Strong(icons.pause.clone())));
+        self.stop = Some(contexts.add_image(EguiTextureHandle::Strong(icons.stop.clone())));
+        self.checkmark = Some(contexts.add_image(EguiTextureHandle::Strong(icons.checkmark.clone())));
+    }
+}
+
+/// Converts Bevy Color to egui Color32.
+pub fn to_egui_color(c: Color) -> egui::Color32 {
+    use bevy::color::Srgba;
+    let srgba: Srgba = c.into();
+    let [r, g, b, a] = srgba.to_f32_array();
+    egui::Color32::from_rgba_unmultiplied(
+        (r * 255.0).round() as u8,
+        (g * 255.0).round() as u8,
+        (b * 255.0).round() as u8,
+        (a * 255.0).round() as u8,
+    )
 }

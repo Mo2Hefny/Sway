@@ -1,414 +1,160 @@
-//! UI interaction systems.
+//! General UI systems for the editor.
 
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContexts;
 
-use super::icons::UiIcons;
-use super::state::*;
-use super::theme::interaction::Active;
-use super::widgets::{
-    BottomToolbar, CaretButton, CaretIcon, CheckboxButton, CheckboxIcon, CheckboxSetting, ExportButton, FloatingPanel,
-    HamburgerButton, ImportButton, InspectorPanel, InspectorTitle, InstructionOverlayRoot, PageIconButton, PageIconFor,
-    PanelBody, PlaybackAction, PlaybackButton, RightSidebarRoot, ToolBarRoot, ToolButton, ToolButtonFor,
-};
+use crate::core::constants::{MAX_CONSTRAINT_DISTANCE, MIN_CONSTRAINT_DISTANCE};
 use crate::core::components::LimbSet;
 use crate::core::{
-    DistanceConstraint, Node as SimNode, build_scene_data, export_to_file, import_from_file, spawn_scene_data,
+    DistanceConstraint, Node as SimNode, Playground, spawn_scene_data, PendingFileOp,
 };
 use crate::editor::components::{ConstraintPreview, ConstraintVisual, NodeVisual};
 use crate::editor::tools::selection::Selection;
+use crate::ui::icons::{UiIcons, EguiIconTextures};
+use crate::ui::panels::*;
+use crate::ui::state::*;
 
-/// Handles checkbox button clicks and updates display settings.
-pub fn handle_checkbox_clicks(
-    mut display_settings: ResMut<DisplaySettings>,
-    query: Query<(&Interaction, &CheckboxSetting), (Changed<Interaction>, With<CheckboxButton>)>,
-) {
-    for (interaction, setting) in &query {
-        if *interaction == Interaction::Pressed {
-            match setting {
-                CheckboxSetting::ShowSkin => {
-                    display_settings.show_skin = !display_settings.show_skin;
-                    info!("Show Skin: {}", display_settings.show_skin);
-                }
-                CheckboxSetting::ShowEdge => {
-                    display_settings.show_edge = !display_settings.show_edge;
-                    info!("Show Edge: {}", display_settings.show_edge);
-                }
-                CheckboxSetting::ShowNodes => {
-                    display_settings.show_nodes = !display_settings.show_nodes;
-                    info!("Show Nodes: {}", display_settings.show_nodes);
-                }
-                CheckboxSetting::ShowDebug => {
-                    display_settings.show_debug = !display_settings.show_debug;
-                    info!("Show Debug: {}", display_settings.show_debug);
-                }
-            }
-        }
-    }
-}
-
-/// Updates checkbox icon visibility based on display settings.
-pub fn update_checkbox_icons(
-    display_settings: Res<DisplaySettings>,
-    mut query: Query<(&CheckboxSetting, &mut Visibility), With<CheckboxIcon>>,
-) {
-    if !display_settings.is_changed() {
-        return;
-    }
-
-    for (setting, mut visibility) in &mut query {
-        let is_checked = match setting {
-            CheckboxSetting::ShowSkin => display_settings.show_skin,
-            CheckboxSetting::ShowEdge => display_settings.show_edge,
-            CheckboxSetting::ShowNodes => display_settings.show_nodes,
-            CheckboxSetting::ShowDebug => display_settings.show_debug,
-        };
-        *visibility = if is_checked {
-            Visibility::Inherited
-        } else {
-            Visibility::Hidden
-        };
-    }
-}
-
-/// Handles hamburger menu toggle to collapse/expand floating panel.
-pub fn handle_hamburger_click(
-    mut panel_state: ResMut<FloatingPanelState>,
-    query: Query<&Interaction, (Changed<Interaction>, With<HamburgerButton>)>,
-) {
-    for interaction in &query {
-        if *interaction == Interaction::Pressed {
-            panel_state.collapsed = !panel_state.collapsed;
-            info!("Panel collapsed: {}", panel_state.collapsed);
-        }
-    }
-}
-
-/// Updates floating panel body display based on collapsed state.
-pub fn update_panel_visibility(
-    panel_state: Res<FloatingPanelState>,
-    mut panel_body_query: Query<&mut Node, With<PanelBody>>,
-) {
-    if !panel_state.is_changed() {
-        return;
-    }
-
-    let display = if panel_state.collapsed {
-        Display::None
-    } else {
-        Display::Flex
-    };
-
-    for mut node in &mut panel_body_query {
-        node.display = display;
-    }
-}
-
-/// Handles import button clicks — opens file dialog and loads a scene.
-pub fn handle_import_click(
-    mut commands: Commands,
-    query: Query<&Interaction, (Changed<Interaction>, With<ImportButton>)>,
-    existing_nodes: Query<Entity, With<SimNode>>,
-    existing_constraints: Query<Entity, With<DistanceConstraint>>,
-    mut selection: ResMut<Selection>,
-    _existing_visuals: Query<Entity, With<NodeVisual>>,
-    existing_con_visuals: Query<Entity, With<ConstraintVisual>>,
-    existing_previews: Query<Entity, With<ConstraintPreview>>,
-) {
-    for interaction in &query {
-        if *interaction != Interaction::Pressed {
-            continue;
-        }
-
-        let Some(scene) = import_from_file() else { return };
-
-        // Clear selection
-        selection.deselect();
-
-        // Despawn all existing simulation entities (children despawn automatically)
-        for entity in existing_con_visuals.iter() {
-            commands.entity(entity).despawn();
-        }
-        for entity in existing_previews.iter() {
-            commands.entity(entity).despawn();
-        }
-        for entity in existing_constraints.iter() {
-            commands.entity(entity).despawn();
-        }
-        for entity in existing_nodes.iter() {
-            commands.entity(entity).despawn();
-        }
-
-        // Spawn new scene
-        spawn_scene_data(&mut commands, &scene);
-    }
-}
-
-/// Handles export button clicks — opens file dialog and saves the scene.
-pub fn handle_export_click(
-    query: Query<&Interaction, (Changed<Interaction>, With<ExportButton>)>,
-    nodes: Query<(Entity, &mut SimNode)>,
-    constraints: Query<(Entity, &DistanceConstraint)>,
-    mut limb_sets: Query<(Entity, &mut LimbSet)>,
-) {
-    for interaction in &query {
-        if *interaction == Interaction::Pressed {
-            let scene = build_scene_data(&nodes, &constraints, &mut limb_sets);
-            export_to_file(&scene);
-        }
-    }
-}
-
-/// Handles inspector caret button clicks to toggle panel visibility.
-pub fn handle_caret_click(
-    mut inspector_state: ResMut<InspectorState>,
-    query: Query<&Interaction, (Changed<Interaction>, With<CaretButton>)>,
-) {
-    for interaction in &query {
-        if *interaction == Interaction::Pressed {
-            inspector_state.open = !inspector_state.open;
-            info!("Inspector panel open: {}", inspector_state.open);
-        }
-    }
-}
-
-/// Updates inspector panel visibility and caret icon based on state.
-pub fn update_inspector_panel_visibility(
-    inspector_state: Res<InspectorState>,
-    icons: Res<UiIcons>,
-    mut panel_query: Query<&mut Visibility, With<InspectorPanel>>,
-    mut caret_query: Query<&mut ImageNode, With<CaretIcon>>,
-) {
-    if !inspector_state.is_changed() {
-        return;
-    }
-
-    let visibility = if inspector_state.open {
-        Visibility::Inherited
-    } else {
-        Visibility::Hidden
-    };
-
-    for mut vis in &mut panel_query {
-        *vis = visibility;
-    }
-
-    let caret_icon = if inspector_state.open {
-        icons.caret_right.clone()
-    } else {
-        icons.caret_left.clone()
-    };
-    for mut image in &mut caret_query {
-        image.image = caret_icon.clone();
-    }
-}
-
-/// Handles inspector page tab clicks to switch active page.
-pub fn handle_page_icon_clicks(
-    mut inspector_state: ResMut<InspectorState>,
-    query: Query<(&Interaction, &PageIconFor), (Changed<Interaction>, With<PageIconButton>)>,
-) {
-    for (interaction, page_for) in &query {
-        if *interaction == Interaction::Pressed {
-            inspector_state.active_page = page_for.0;
-            info!("Inspector page changed to: {:?}", inspector_state.active_page);
-        }
-    }
-}
-
-/// Updates inspector page icon active states.
-pub fn update_page_icon_styles(
-    inspector_state: Res<InspectorState>,
-    mut commands: Commands,
-    button_query: Query<(Entity, &PageIconFor), With<PageIconButton>>,
-) {
-    if !inspector_state.is_changed() {
-        return;
-    }
-
-    for (entity, page_for) in &button_query {
-        let is_active = page_for.0 == inspector_state.active_page;
-        if is_active {
-            commands.entity(entity).insert(Active);
-            info!("Page button {:?} set to active", page_for.0);
-        } else {
-            commands.entity(entity).remove::<Active>();
-        }
-    }
-}
-
-/// Updates inspector title text based on active page.
-pub fn update_inspector_title(
-    inspector_state: Res<InspectorState>,
-    mut title_query: Query<&mut Text, With<InspectorTitle>>,
-) {
-    if !inspector_state.is_changed() {
-        return;
-    }
-
-    for mut text in &mut title_query {
-        **text = inspector_state.active_page.name().to_string();
-    }
-}
-
-/// Handles tool button clicks to change active editor tool.
-pub fn handle_tool_button_clicks(
+/// Main editor UI system: orchestrates all egui panels and updates InputState.
+pub fn editor_ui_system(
+    mut contexts: EguiContexts,
+    (mut display_settings, mut panel_state, mut inspector_state): (
+        ResMut<DisplaySettings>,
+        ResMut<FloatingPanelState>,
+        ResMut<InspectorState>,
+    ),
     mut tool_state: ResMut<EditorToolState>,
-    query: Query<(&Interaction, &ToolButtonFor), (Changed<Interaction>, With<ToolButton>)>,
+    mut playback: ResMut<PlaybackState>,
+    ui_visibility: Res<UiVisibility>,
+    mut input_state: ResMut<InputState>,
+    icons: Res<UiIcons>,
+    mut egui_icons: ResMut<EguiIconTextures>,
+    mut import_requested: ResMut<ImportRequested>,
+    selection: Res<Selection>,
+    mut playground: ResMut<Playground>,
+    mut node_query: Query<(Entity, &mut SimNode)>,
+    mut limb_set_query: Query<(Entity, &mut LimbSet)>,
+    constraint_query: Query<(Entity, &DistanceConstraint)>,
+    mut pending_actions: ResMut<PendingConstraintActions>,
+    windows: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (interaction, tool_for) in &query {
-        if *interaction == Interaction::Pressed {
-            tool_state.active = tool_for.0;
-            info!("Tool changed to: {:?}", tool_state.active);
-        }
-    }
-}
+    egui_icons.ensure_registered(&mut contexts, &icons);
+    let Ok(ctx) = contexts.ctx_mut() else { return };
 
-/// Updates tool button active states.
-pub fn update_tool_button_styles(
-    tool_state: Res<EditorToolState>,
-    mut commands: Commands,
-    button_query: Query<(Entity, &ToolButtonFor), With<ToolButton>>,
-) {
-    if !tool_state.is_changed() {
+    if !ui_visibility.visible {
+        input_state.cursor_over_ui = false;
         return;
     }
 
-    for (entity, tool_for) in &button_query {
-        let is_active = tool_for.0 == tool_state.active;
-        if is_active {
-            commands.entity(entity).insert(Active);
-            info!("Tool button {:?} set to active", tool_for.0);
-        } else {
-            commands.entity(entity).remove::<Active>();
-        }
-    }
+    // DRAW PANELS
+    draw_floating_panel(
+        ctx,
+        &egui_icons,
+        &mut panel_state,
+        &mut display_settings,
+        &mut import_requested,
+        &mut playground,
+        &node_query,
+        &constraint_query,
+        &mut limb_set_query,
+        &windows,
+    );
+
+    draw_toolbar(
+        ctx,
+        &egui_icons,
+        &mut tool_state,
+        &inspector_state,
+    );
+
+    draw_inspector_panel(
+        ctx,
+        &egui_icons,
+        &mut inspector_state,
+        &selection,
+        &playground,
+        &mut node_query,
+        &mut limb_set_query,
+        &constraint_query,
+        &mut pending_actions,
+    );
+
+    draw_playback_toolbar(
+        ctx,
+        &egui_icons,
+        &mut playback,
+    );
+
+    draw_instruction_hints(ctx);
+
+    input_state.cursor_over_ui = ctx.wants_pointer_input();
 }
 
-/// Updates tool bar position based on inspector panel state.
-pub fn update_tool_bar_position(
-    inspector_state: Res<InspectorState>,
-    mut tool_bar_query: Query<&mut Node, With<ToolBarRoot>>,
-) {
-    if !inspector_state.is_changed() {
-        return;
-    }
-
-    let right_offset = if inspector_state.open { px(328.0) } else { px(48.0) };
-
-    for mut node in &mut tool_bar_query {
-        node.right = right_offset;
-    }
-}
-
-/// Handles 'H' key press to toggle overall UI visibility.
-pub fn handle_ui_toggle_input(keyboard: Res<ButtonInput<KeyCode>>, mut ui_visibility: ResMut<UiVisibility>) {
+/// Toggle UI visibility with H key.
+pub fn toggle_ui_visibility(keyboard: Res<ButtonInput<KeyCode>>, mut ui_visibility: ResMut<UiVisibility>) {
     if keyboard.just_pressed(KeyCode::KeyH) {
         ui_visibility.visible = !ui_visibility.visible;
-        info!("UI visibility: {}", ui_visibility.visible);
     }
 }
 
-/// Updates visibility of all UI panels based on global UI visibility state.
-pub fn update_ui_visibility(
-    ui_visibility: Res<UiVisibility>,
-    mut floating_panel_query: Query<
-        &mut Visibility,
-        (
-            With<FloatingPanel>,
-            Without<RightSidebarRoot>,
-            Without<ToolBarRoot>,
-            Without<InstructionOverlayRoot>,
-            Without<BottomToolbar>,
-        ),
-    >,
-    mut sidebar_query: Query<
-        &mut Visibility,
-        (
-            With<RightSidebarRoot>,
-            Without<FloatingPanel>,
-            Without<ToolBarRoot>,
-            Without<InstructionOverlayRoot>,
-            Without<BottomToolbar>,
-        ),
-    >,
-    mut tool_bar_query: Query<
-        &mut Visibility,
-        (
-            With<ToolBarRoot>,
-            Without<FloatingPanel>,
-            Without<RightSidebarRoot>,
-            Without<InstructionOverlayRoot>,
-            Without<BottomToolbar>,
-        ),
-    >,
-    mut overlay_query: Query<
-        &mut Visibility,
-        (
-            With<InstructionOverlayRoot>,
-            Without<FloatingPanel>,
-            Without<RightSidebarRoot>,
-            Without<ToolBarRoot>,
-            Without<BottomToolbar>,
-        ),
-    >,
-    mut bottom_bar_query: Query<
-        &mut Visibility,
-        (
-            With<BottomToolbar>,
-            Without<FloatingPanel>,
-            Without<RightSidebarRoot>,
-            Without<ToolBarRoot>,
-            Without<InstructionOverlayRoot>,
-        ),
-    >,
-) {
-    if !ui_visibility.is_changed() {
-        return;
-    }
-
-    let visibility = if ui_visibility.visible {
-        Visibility::Inherited
-    } else {
-        Visibility::Hidden
-    };
-
-    for mut vis in &mut floating_panel_query {
-        *vis = visibility;
-    }
-    for mut vis in &mut sidebar_query {
-        *vis = visibility;
-    }
-    for mut vis in &mut tool_bar_query {
-        *vis = visibility;
-    }
-    for mut vis in &mut overlay_query {
-        *vis = visibility;
-    }
-    for mut vis in &mut bottom_bar_query {
-        *vis = visibility;
-    }
-}
-
-pub fn handle_playback_clicks(
+/// Toggles playback state when Space is pressed, unless typing in UI.
+pub fn toggle_playback_control(
+    mut contexts: EguiContexts,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut playback: ResMut<PlaybackState>,
-    query: Query<(&Interaction, &PlaybackAction), (Changed<Interaction>, With<PlaybackButton>)>,
 ) {
-    for (interaction, action) in &query {
-        if *interaction == Interaction::Pressed {
-            match action {
-                PlaybackAction::Play => {
-                    playback.play();
-                    info!("Playback: Playing");
-                }
-                PlaybackAction::Pause => {
-                    playback.pause();
-                    info!("Playback: Paused");
-                }
-                PlaybackAction::Stop => {
-                    playback.stop();
-                    info!("Playback: Stopped");
-                }
+    if let Ok(ctx) = contexts.ctx_mut() {
+        if ctx.wants_keyboard_input() {
+            return;
+        }
+    }
+    if keyboard.just_pressed(KeyCode::Space) {
+        playback.toggle();
+    }
+}
+
+/// Applies deferred import, constraint updates, and constraint deletes.
+pub fn apply_editor_actions(
+    mut commands: Commands,
+    mut import_requested: ResMut<ImportRequested>,
+    mut pending_file_op: ResMut<PendingFileOp>,
+    mut pending_actions: ResMut<PendingConstraintActions>,
+    mut selection: ResMut<Selection>,
+    node_query: Query<(Entity, &mut SimNode)>,
+    mut constraint_query: Query<(Entity, &mut DistanceConstraint)>,
+    visual_entities: Query<Entity, Or<(With<NodeVisual>, With<ConstraintVisual>, With<ConstraintPreview>)>>,
+) {
+    let scene_to_import = import_requested.0.take().or(pending_file_op.import_data.take());
+    if let Some(scene) = scene_to_import {
+        selection.deselect();
+        for e in visual_entities.iter() {
+            commands.entity(e).despawn();
+        }
+        let constraint_list: Vec<Entity> = constraint_query.iter().map(|(e, _)| e).collect();
+        for e in constraint_list {
+            commands.entity(e).despawn();
+        }
+        let node_list: Vec<Entity> = node_query.iter().map(|(e, _)| e).collect();
+        for e in node_list {
+            commands.entity(e).despawn();
+        }
+        spawn_scene_data(&mut commands, &scene);
+    }
+    for (entity, len) in pending_actions.updates.drain(..) {
+        if let Ok((_, mut c)) = constraint_query.get_mut(entity) {
+            c.rest_length = len.clamp(MIN_CONSTRAINT_DISTANCE, MAX_CONSTRAINT_DISTANCE);
+        }
+    }
+    for entity in pending_actions.deletes.drain(..) {
+        commands.entity(entity).despawn();
+    }
+    for entity in pending_actions.node_deletes.drain(..) {
+        for (c_entity, constraint) in constraint_query.iter() {
+            if constraint.involves(entity) {
+                commands.entity(c_entity).despawn();
             }
         }
+        commands.entity(entity).despawn();
+        selection.deselect();
     }
 }

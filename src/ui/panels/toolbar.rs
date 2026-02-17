@@ -1,99 +1,74 @@
-//! Tool bar spawning.
+use bevy_egui::egui;
 
-use bevy::picking::prelude::Pickable;
-use bevy::prelude::*;
-
-use crate::ui::icons::UiIcons;
 use crate::ui::state::*;
-use crate::ui::theme::interaction::Active;
-use crate::ui::theme::interaction::InteractionPalette;
 use crate::ui::theme::palette::*;
-use crate::ui::widgets::{ToolBarRoot, ToolButton, ToolButtonFor, ToolIconColumn, ToolIconImage};
+use crate::ui::icons::{EguiIconTextures, to_egui_color};
 
-use super::px;
+pub fn draw_toolbar(
+    ctx: &egui::Context,
+    icons: &EguiIconTextures,
+    tool_state: &mut EditorToolState,
+    inspector_state: &InspectorState,
+) {
+    let screen = ctx.available_rect();
+    let right = screen.max.x;
+    let top = screen.min.y;
+    let bottom = screen.max.y;
 
-/// Spawns the vertical tool bar with editor tool buttons.
-pub fn spawn_tool_bar(commands: &mut Commands, icons: &UiIcons) {
-    commands
-        .spawn((
-            Name::new("Tool Bar Root"),
-            ToolBarRoot,
-            Node {
-                position_type: PositionType::Absolute,
-                right: px(328.0),
-                top: px(0.0),
-                bottom: px(0.0),
-                width: px(48.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                padding: UiRect::all(px(4.0)),
-                row_gap: px(4.0),
-                ..default()
-            },
-            BackgroundColor(SURFACE),
-            Pickable::IGNORE,
-        ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    Name::new("Tool Icon Column"),
-                    ToolIconColumn,
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        row_gap: px(4.0),
-                        ..default()
-                    },
-                ))
-                .with_children(|column| {
-                    spawn_tool_button(column, EditorTool::Cursor, icons.cursor_tool.clone(), true);
-                    spawn_tool_button(column, EditorTool::AddNode, icons.add_node_tool.clone(), false);
-                    spawn_tool_button(column, EditorTool::AddEdge, icons.add_edge_tool.clone(), false);
-                    spawn_tool_button(column, EditorTool::Move, icons.move_tool.clone(), false);
+    let icon_bar_w = 48.0;
+    let inspector_w = 280.0;
+    let tool_bar_w = 48.0;
+    let panel_height = bottom - top;
+
+    let icon_bar_x = right - icon_bar_w;
+    let inspector_x = icon_bar_x - inspector_w;
+    let tool_bar_x = if inspector_state.open {
+        inspector_x - tool_bar_w
+    } else {
+        icon_bar_x - tool_bar_w
+    };
+
+    egui::Area::new(egui::Id::new("tool_bar"))
+        .fixed_pos(egui::pos2(tool_bar_x, top))
+        .order(egui::Order::Foreground)
+        .show(ctx, |ui| {
+            ui.allocate_ui(egui::vec2(tool_bar_w, panel_height), |ui| {
+                let frame = egui::Frame::new()
+                    .fill(to_egui_color(SURFACE))
+                    .inner_margin(egui::Margin::same(4))
+                    .corner_radius(4.0);
+                frame.show(ui, |ui| {
+                    ui.set_min_size(egui::vec2(tool_bar_w - 8.0, panel_height - 8.0));
+                    ui.style_mut().spacing.item_spacing = egui::vec2(4.0, 4.0);
+                    ui.add_space(4.0);
+                    for (tool, icon) in [
+                        (EditorTool::Cursor, icons.cursor_tool),
+                        (EditorTool::AddNode, icons.add_node_tool),
+                        (EditorTool::AddEdge, icons.add_edge_tool),
+                        (EditorTool::Move, icons.move_tool),
+                    ] {
+                        let active = tool_state.active == tool;
+                        let fill = if active {
+                            to_egui_color(SURFACE_HOVER)
+                        } else {
+                            to_egui_color(SURFACE)
+                        };
+                        let tool_btn = match icon {
+                            Some(tid) => ui.add_sized(
+                                egui::vec2(40.0, 40.0),
+                                egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
+                                    tid,
+                                    egui::vec2(24.0, 24.0),
+                                )))
+                                .fill(fill),
+                            ),
+                            None => ui.add_sized(egui::vec2(40.0, 40.0), egui::Button::new(tool.name()).fill(fill)),
+                        };
+                        if tool_btn.clicked() {
+                            tool_state.active = tool;
+                        }
+                    }
                 });
+            });
         });
-}
-
-/// Spawns a tool button with icon and active state styling.
-fn spawn_tool_button(parent: &mut ChildSpawnerCommands, tool: EditorTool, icon: Handle<Image>, is_active: bool) {
-    let bg_color = if is_active { SURFACE_HOVER } else { SURFACE };
-
-    let mut entity = parent.spawn((
-        Name::new(format!("Tool Button: {}", tool.name())),
-        ToolButton,
-        ToolButtonFor(tool),
-        Button,
-        Node {
-            width: px(40.0),
-            height: px(40.0),
-            align_items: AlignItems::Center,
-            justify_content: JustifyContent::Center,
-            border_radius: BorderRadius::all(px(4.0)),
-            ..default()
-        },
-        BackgroundColor(bg_color),
-        InteractionPalette {
-            none: SURFACE,
-            hovered: SURFACE_HOVER,
-            pressed: SURFACE_PRESSED,
-            active: SURFACE_HOVER,
-        },
-    ));
-
-    if is_active {
-        entity.insert(Active);
-    }
-
-    entity.with_children(|btn| {
-        btn.spawn((
-            ToolIconImage,
-            ToolButtonFor(tool),
-            ImageNode::new(icon),
-            Node {
-                width: px(24.0),
-                height: px(24.0),
-                ..default()
-            },
-            Pickable::IGNORE,
-        ));
-    });
 }

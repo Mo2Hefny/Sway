@@ -1,22 +1,19 @@
-//! Editor UI layout with sidebar, floating panel, and toolbar (bevy_egui).
+//! Editor UI layout implemented with bevy_egui.
 
-pub mod egui;
 pub mod icons;
 pub mod messages;
 pub mod panels;
 pub mod state;
 pub mod systems;
 pub mod theme;
-pub mod widgets;
 
 use bevy::prelude::*;
 use bevy_egui::EguiPrimaryContextPass;
-use egui::{
-    EguiIconTextures, ImportRequested, PendingConstraintActions, apply_editor_actions, editor_ui_system,
-    toggle_playback_control, toggle_ui_visibility,
-};
-use icons::UiIcons;
+use icons::{UiIcons, EguiIconTextures};
 use state::*;
+use systems::{
+    apply_editor_actions, editor_ui_system, toggle_playback_control, toggle_ui_visibility,
+};
 
 /// Bevy plugin for editor UI (bevy_egui).
 pub struct UiPlugin;
@@ -53,9 +50,5 @@ pub mod prelude {
         DisplaySettings, EditorToolState, FloatingPanelState, InputState, InspectorPage, InspectorState, PlaybackMode,
         PlaybackState, UiVisibility,
     };
-    pub use super::theme::{
-        interaction::{Active, InteractionPalette},
-        palette,
-    };
-    pub use super::widgets::*;
+    pub use super::theme::palette;
 }

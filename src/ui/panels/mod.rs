@@ -1,23 +1,13 @@
-//! Panel spawning functions.
+//! UI panel modules for egui implementation.
 
-mod bottom_toolbar;
 mod floating_panel;
-mod inspector;
-mod instructions;
 mod toolbar;
+mod inspector;
+mod playback;
+mod hints;
 
-pub use bottom_toolbar::spawn_bottom_toolbar;
-pub use floating_panel::spawn_floating_panel;
-pub use inspector::spawn_right_sidebar;
-pub use instructions::spawn_instruction_overlay;
-pub use toolbar::spawn_tool_bar;
-
-// Re-export widget types used by ui/mod.rs
-pub use crate::ui::widgets::DropdownState;
-
-use bevy::prelude::Val;
-
-/// Shared helper for pixel values.
-pub(crate) fn px(val: f32) -> Val {
-    Val::Px(val)
-}
+pub use floating_panel::draw_floating_panel;
+pub use toolbar::draw_toolbar;
+pub use inspector::draw_inspector_panel;
+pub use playback::draw_playback_toolbar;
+pub use hints::draw_instruction_hints;
