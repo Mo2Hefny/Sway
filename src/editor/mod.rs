@@ -51,7 +51,14 @@ impl Plugin for EditorPlugin {
         );
         app.add_systems(
             Update,
-            (handle_camera_zoom, handle_camera_pan, handle_node_selection).chain(),
+            (
+                handle_camera_zoom,
+                handle_camera_pan,
+                handle_follow_toggle,
+                handle_camera_follow,
+                handle_node_selection,
+            )
+                .chain(),
         );
         app.add_systems(
             Update,

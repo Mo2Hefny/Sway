@@ -82,8 +82,7 @@ pub const PLAYBACK_STOP: &str = "Stop";
 // =============================================================================
 
 pub const HINT_SELECT: &str = "Select: S";
-pub const HINT_ADD_NODE: &str = "Add Node: N";
-pub const HINT_ADD_EDGE: &str = "Add Edge: E";
+pub const HINT_FOLLOW_NODE: &str = "Follow Node: F";
 pub const HINT_MOVE: &str = "Move: G";
 pub const HINT_TOGGLE_UI: &str = "Toggle UI: H";
 pub const HINT_PLAY: &str = "Play/Pause: Space";

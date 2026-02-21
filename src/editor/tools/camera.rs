@@ -4,7 +4,7 @@ use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 
 use crate::core::Playground;
-use crate::editor::constants::{ZOOM_MAX, ZOOM_MIN, ZOOM_SPEED};
+use crate::editor::constants::{CAMERA_LERP_FACTOR, ZOOM_MAX, ZOOM_MIN, ZOOM_SPEED};
 use crate::ui::state::{EditorTool, EditorToolState, InputState};
 
 use super::input::cursor_screen_pos;
@@ -13,6 +13,7 @@ use super::input::cursor_screen_pos;
 pub struct CameraState {
     pub zoom: f32,
     pub last_drag_pos: Option<Vec2>,
+    pub follow_selection: bool,
 }
 
 impl Default for CameraState {
@@ -20,6 +21,7 @@ impl Default for CameraState {
         Self {
             zoom: 1.0,
             last_drag_pos: None,
+            follow_selection: false,
         }
     }
 }
@@ -78,8 +80,49 @@ pub fn handle_camera_pan(
         return;
     };
 
+    camera_state.follow_selection = false;
+
     let scale = get_camera_scale(projection);
     apply_pan_movement(&mut camera_transform, delta, scale, &playground);
+}
+
+pub fn handle_follow_toggle(
+    mut camera_state: ResMut<CameraState>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+) {
+    if keyboard.just_pressed(KeyCode::KeyF) {
+        camera_state.follow_selection = !camera_state.follow_selection;
+    }
+}
+
+pub fn handle_camera_follow(
+    camera_state: Res<CameraState>,
+    selection: Res<super::selection::Selection>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    node_query: Query<&Transform, (With<crate::core::Node>, Without<Camera2d>)>,
+) {
+    if !camera_state.follow_selection {
+        return;
+    }
+
+    let Some(selected_entity) = selection.entity else {
+        return;
+    };
+
+    let Ok(node_transform) = node_query.get(selected_entity) else {
+        return;
+    };
+
+    let Ok(mut camera_transform) = camera_query.single_mut() else {
+        return;
+    };
+
+    let target = node_transform.translation.truncate();
+    let current = camera_transform.translation.truncate();
+    let next = current.lerp(target, CAMERA_LERP_FACTOR);
+
+    camera_transform.translation.x = next.x;
+    camera_transform.translation.y = next.y;
 }
 
 // =============================================================================

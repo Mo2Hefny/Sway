@@ -32,6 +32,7 @@ impl Selection {
 pub fn handle_node_selection(
     mut commands: Commands,
     mut selection: ResMut<Selection>,
+    mut camera_state: ResMut<super::camera::CameraState>,
     tool_state: Res<EditorToolState>,
     input_state: Res<InputState>,
     mouse_button: Res<ButtonInput<MouseButton>>,
@@ -59,8 +60,10 @@ pub fn handle_node_selection(
     if let Some(entity) = clicked_node {
         selection.select(entity);
         commands.entity(entity).insert(Selected);
+        camera_state.follow_selection = true;
     } else {
         selection.deselect();
+        camera_state.follow_selection = false;
     }
 }
 

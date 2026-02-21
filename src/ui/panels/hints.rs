@@ -14,8 +14,7 @@ pub fn draw_instruction_hints(ctx: &egui::Context) {
             ui.style_mut().spacing.item_spacing = egui::vec2(HINT_ITEM_SPACING.0, HINT_ITEM_SPACING.1);
             let hint = to_egui_color(Color::srgba(HINT_COLOR.0, HINT_COLOR.1, HINT_COLOR.2, HINT_COLOR.3));
             ui.label(egui::RichText::new(HINT_SELECT).color(hint).text_style(egui::TextStyle::Small));
-            ui.label(egui::RichText::new(HINT_ADD_NODE).color(hint).text_style(egui::TextStyle::Small));
-            ui.label(egui::RichText::new(HINT_ADD_EDGE).color(hint).text_style(egui::TextStyle::Small));
+            ui.label(egui::RichText::new(HINT_FOLLOW_NODE).color(hint).text_style(egui::TextStyle::Small));
             ui.label(egui::RichText::new(HINT_MOVE).color(hint).text_style(egui::TextStyle::Small));
             ui.label(egui::RichText::new(HINT_TOGGLE_UI).color(hint).text_style(egui::TextStyle::Small));
             ui.label(egui::RichText::new(HINT_PLAY).color(hint).text_style(egui::TextStyle::Small));
