@@ -28,6 +28,7 @@ impl Default for DisplaySettings {
 #[derive(Resource, Clone, Debug, Default)]
 pub struct FloatingPanelState {
     pub collapsed: bool,
+    pub selected_example: Option<usize>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

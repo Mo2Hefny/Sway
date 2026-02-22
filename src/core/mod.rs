@@ -11,7 +11,7 @@ use bevy::prelude::*;
 
 pub use components::{AnchorMovementMode, DistanceConstraint, Limb, LimbSet, Node, NodeType, Playground, ProceduralPathType};
 pub use resources::ConstraintGraph;
-pub use serialization::{SceneData, build_scene_data, export_to_file, import_from_file, spawn_scene_data, sync_pending_imports, PendingFileOp};
+pub use serialization::{SceneData, build_scene_data, deserialize_scene, export_to_file, import_from_file, spawn_scene_data, sync_pending_imports, PendingFileOp, EXAMPLES};
 pub use systems::{
     anchor_movement_system, collision_avoidance_system, constraint_solving_system, update_constraint_graph,
     verlet_integration_system, fabrik_solving_system, limb_builder_system

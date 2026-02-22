@@ -8,6 +8,12 @@ use super::components::{DistanceConstraint, Limb, LimbSet, Node};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
 
+mod examples {
+    include!(concat!(env!("OUT_DIR"), "/examples.rs"));
+}
+
+pub use examples::EXAMPLES;
+
 #[derive(Resource, Default)]
 pub struct PendingFileOp {
     pub import_data: Option<SceneData>,
@@ -146,7 +152,7 @@ pub fn import_from_file() -> Option<SceneData> {
             {
                 let data = file_handle.read().await;
                 if let Ok(json) = std::str::from_utf8(&data) {
-                    if let Ok(scene) = serde_json::from_str::<SceneData>(json) {
+                    if let Some(scene) = deserialize_scene(json) {
                         let _ = IMPORT_CHANNEL.0.send(scene);
                     }
                 }
@@ -161,6 +167,16 @@ pub fn sync_pending_imports(mut pending_op: ResMut<PendingFileOp>) {
     if let Ok(rx) = IMPORT_CHANNEL.1.lock() {
         while let Ok(scene) = rx.try_recv() {
             pending_op.import_data = Some(scene);
+        }
+    }
+}
+
+pub fn deserialize_scene(json: &str) -> Option<SceneData> {
+    match serde_json::from_str::<SceneData>(json) {
+        Ok(scene) => Some(scene),
+        Err(e) => {
+            error!("Failed to parse scene JSON: {e}");
+            None
         }
     }
 }
@@ -315,15 +331,7 @@ fn read_scene_from_file(path: &std::path::Path) -> Option<SceneData> {
 }
 
 fn parse_scene(json: &str, path: &std::path::Path) -> Option<SceneData> {
-    match serde_json::from_str::<SceneData>(json) {
-        Ok(scene) => {
-            info!("Scene imported from {}", path.display());
-            Some(scene)
-        }
-        Err(e) => {
-            error!("Failed to parse scene file: {e}");
-            None
-        }
-    }
+    let scene = deserialize_scene(json)?;
+    info!("Scene imported from {}", path.display());
+    Some(scene)
 }
-

@@ -3,7 +3,7 @@ use bevy_egui::egui;
 use bevy::window::PrimaryWindow;
 
 use crate::core::{
-    build_scene_data, export_to_file, import_from_file, Playground, Node as SimNode, DistanceConstraint,
+    build_scene_data, deserialize_scene, export_to_file, import_from_file, Playground, Node as SimNode, DistanceConstraint, EXAMPLES,
 };
 use crate::core::components::LimbSet;
 use crate::ui::state::*;
@@ -93,6 +93,33 @@ pub fn draw_floating_panel(
                         if ui.button(BTN_EXPORT).clicked() {
                             let scene = build_scene_data(node_query, constraint_query, limb_set_query);
                             export_to_file(&scene);
+                        }
+
+                        ui.add_space(PANEL_SECTION_SPACING);
+                        ui.label(egui::RichText::new("Examples")
+                            .text_style(egui::TextStyle::Heading)
+                            .color(typography::heading_color()));
+                        
+                        let mut selected = panel_state.selected_example.unwrap_or(0);
+                        let mut changed = false;
+
+                        egui::ComboBox::from_id_salt("example_selector")
+                            .selected_text(panel_state.selected_example.map(|i| EXAMPLES[i].0).unwrap_or("Select Example..."))
+                            .show_ui(ui, |ui| {
+                                for (i, (name, _)) in EXAMPLES.iter().enumerate() {
+                                    if ui.selectable_value(&mut selected, i, *name).clicked() {
+                                        panel_state.selected_example = Some(i);
+                                        changed = true;
+                                    }
+                                }
+                            });
+
+                        if changed {
+                            if let Some(i) = panel_state.selected_example {
+                                if let Some(scene) = deserialize_scene(EXAMPLES[i].1) {
+                                    import_requested.0 = Some(scene);
+                                }
+                            }
                         }
 
                         ui.add_space(PANEL_SECTION_SPACING);
