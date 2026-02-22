@@ -2,6 +2,7 @@
 
 pub mod constraint;
 pub mod node;
+pub mod params;
 pub mod playground;
 pub mod skin;
 

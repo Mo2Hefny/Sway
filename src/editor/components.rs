@@ -34,6 +34,10 @@ pub struct TargetMarker;
 #[derive(Component, Debug)]
 pub struct DirectionVector;
 
+/// Links a target marker or direction vector to a specific limb in a LimbSet.
+#[derive(Component, Debug)]
+pub struct LimbIndex(pub usize);
+
 // =============================================================================
 // Selection Components
 // =============================================================================
