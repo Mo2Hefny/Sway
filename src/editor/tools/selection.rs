@@ -60,10 +60,8 @@ pub fn handle_node_selection(
     if let Some(entity) = clicked_node {
         selection.select(entity);
         commands.entity(entity).insert(Selected);
-        camera_state.follow_selection = true;
     } else {
         selection.deselect();
-        camera_state.follow_selection = false;
     }
 }
 
