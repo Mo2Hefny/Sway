@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 use crate::core::components::{LimbSet, Node, Playground};
 use crate::core::resources::ConstraintGraph;
+use crate::core::utils::constrain_angle;
 use crate::ui::state::PlaybackState;
 
 pub fn fabrik_solving_system(
@@ -117,9 +118,30 @@ fn solve_single_limb(
             }
 
             positions[0] = body_pos;
+            let mut prev_angle = if let Ok(body_node) = nodes.get(body_entity) {
+                body_node.chain_angle
+            } else {
+                0.0
+            };
+
             for i in 0..limb.lengths.len() {
-                positions[i + 1] =
-                    constrain_distance(positions[i + 1], positions[i], limb.lengths[i]);
+                let entity = limb.joints[i];
+                if let Ok(node) = nodes.get(entity) {
+                    let current_pos = positions[i + 1];
+                    let parent_pos = positions[i];
+                    let raw_angle = (current_pos - parent_pos).to_angle();
+                    
+                    let constrained_angle = constrain_angle(
+                        raw_angle, prev_angle, node.angle_min, node.angle_max
+                    );
+                    
+                    positions[i + 1] = parent_pos + Vec2::from_angle(constrained_angle) * limb.lengths[i];
+                    prev_angle = constrained_angle;
+                } else {
+                    positions[i + 1] =
+                        constrain_distance(positions[i + 1], positions[i], limb.lengths[i]);
+                    prev_angle = (positions[i + 1] - positions[i]).to_angle();
+                }
             }
 
             if joint_count > 1 {

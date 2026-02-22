@@ -56,11 +56,13 @@ pub struct Node {
     pub acceleration: Vec2,
     pub radius: f32,
     pub node_type: NodeType,
+    pub is_head: bool,
     pub prev_position: Vec2,
     pub chain_angle: f32,
     pub movement_mode: AnchorMovementMode,
     pub movement_speed: f32,
-    pub angle_constraint: f32,
+    pub angle_min: f32,
+    pub angle_max: f32,
     pub path_type: ProceduralPathType,
     pub path_amplitude: Vec2,
     pub path_phase: f32,
@@ -78,11 +80,13 @@ impl Default for Node {
             acceleration: Vec2::ZERO,
             radius: 5.0,
             node_type: NodeType::Normal,
+            is_head: false,
             prev_position: Vec2::ZERO,
             chain_angle: std::f32::consts::PI,
             movement_mode: AnchorMovementMode::None,
             movement_speed: 12.0,
-            angle_constraint: std::f32::consts::FRAC_PI_4,
+            angle_min: -std::f32::consts::FRAC_PI_4,
+            angle_max: std::f32::consts::FRAC_PI_4,
             path_type: ProceduralPathType::Circle,
             path_amplitude: Vec2::splat(100.0),
             path_phase: 0.0,
@@ -111,6 +115,11 @@ impl Node {
 
     pub fn with_node_type(mut self, node_type: NodeType) -> Self {
         self.node_type = node_type;
+        self
+    }
+
+    pub fn with_is_head(mut self, is_head: bool) -> Self {
+        self.is_head = is_head;
         self
     }
 

@@ -40,8 +40,10 @@ pub const PROP_POSITION: &str = "Position";
 pub const PROP_ACCELERATION: &str = "Acceleration";
 pub const PROP_RADIUS: &str = "Radius";
 pub const PROP_FOLLOW_MOUSE: &str = "Follow Mouse";
+pub const PROP_IS_HEAD: &str = "Is Head";
 
-pub const PROP_ANGLE_LIMIT: &str = "Angle Limit";
+pub const PROP_ANGLE_MIN: &str = "Angle Min";
+pub const PROP_ANGLE_MAX: &str = "Angle Max";
 pub const PROP_MAX_REACH: &str = "Max Reach";
 pub const PROP_ANGLE_OFFSET: &str = "Angle Offset";
 pub const PROP_THRESHOLD: &str = "Threshold:";

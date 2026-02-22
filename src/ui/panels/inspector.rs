@@ -213,16 +213,22 @@ fn inspector_content_ui(
                             }
                         });
                 });
+                ui.checkbox(&mut node.is_head, PROP_IS_HEAD);
                 ui.add_space(PANEL_ITEM_SPACING);
                 ui.vertical(|ui| {
-                    ui.label(PROP_ANGLE_LIMIT);
-                    let mut angle_deg = node.angle_constraint.to_degrees();
-                    ui.horizontal(|ui| {
-                        if ui.add(egui::Slider::new(&mut angle_deg, ANGLE_LIMIT_RANGE)).changed() {
-                            node.angle_constraint = angle_deg.to_radians();
-                        }
-                        ui.label("°");
-                    });
+                    ui.label(PROP_ANGLE_MIN);
+                    let mut angle_min_deg = node.angle_min.to_degrees();
+                    if ui.add(egui::Slider::new(&mut angle_min_deg, ANGLE_LIMIT_RANGE).suffix("°")).changed() {
+                        node.angle_min = angle_min_deg.to_radians();
+                        node.angle_max = node.angle_max.max(node.angle_min);
+                    }
+                    
+                    ui.label(PROP_ANGLE_MAX);
+                    let mut angle_max_deg = node.angle_max.to_degrees();
+                    if ui.add(egui::Slider::new(&mut angle_max_deg, ANGLE_LIMIT_RANGE).suffix("°")).changed() {
+                        node.angle_max = angle_max_deg.to_radians();
+                        node.angle_min = node.angle_min.min(node.angle_max);
+                    }
                 });
 
                 if node.node_type == NodeType::Anchor {

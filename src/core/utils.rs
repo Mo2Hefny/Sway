@@ -25,6 +25,19 @@ pub fn normalize_angle_to_positive(angle: f32) -> f32 {
     }
 }
 
+pub fn relative_angle_diff(angle: f32, anchor: f32) -> f32 {
+    let shifted = normalize_angle_to_positive(angle + std::f32::consts::PI - anchor);
+    std::f32::consts::PI - shifted
+}
+
+pub fn constrain_angle(angle: f32, anchor: f32, angle_min: f32, angle_max: f32) -> f32 {
+    let diff = -relative_angle_diff(angle, anchor);
+    let real_min = angle_min.min(angle_max);
+    let real_max = angle_max.max(angle_min);
+    let clamped_diff = diff.clamp(real_min, real_max);
+    normalize_angle_to_positive(anchor + clamped_diff)
+}
+
 pub fn get_mouse_world_position(
     window_query: &Query<&Window, With<PrimaryWindow>>,
     camera_query: &Query<(&Camera, &GlobalTransform)>,

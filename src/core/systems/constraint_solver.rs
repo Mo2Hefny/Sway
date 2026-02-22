@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use crate::core::components::{DistanceConstraint, Node, NodeType};
 use crate::core::constants::*;
 use crate::core::resources::ConstraintGraph;
-use crate::core::utils::normalize_angle_to_positive;
+use crate::core::utils::constrain_angle;
 use crate::ui::state::PlaybackState;
 
 pub fn constraint_solving_system(
@@ -315,10 +315,10 @@ fn resolve_chain_link(
     prev_angle: f32,
     nodes: &mut Query<&mut Node>,
 ) -> Option<(f32, Vec2)> {
-    let (cur_pos, is_fixed, angle_constraint) = {
+    let (cur_pos, is_fixed, angle_min, angle_max) = {
         let node = nodes.get(link.entity).ok()?;
         let fixed = node.node_type == NodeType::Anchor || node.node_type == NodeType::Limb;
-        (node.position, fixed, node.angle_constraint)
+        (node.position, fixed, node.angle_min, node.angle_max)
     };
 
     if is_fixed {
@@ -329,7 +329,8 @@ fn resolve_chain_link(
             cur_pos,
             prev_pos,
             prev_angle,
-            angle_constraint,
+            angle_min,
+            angle_max,
             prev_link.rest_length,
             nodes,
         )
@@ -354,12 +355,13 @@ fn handle_movable_in_chain(
     cur_pos: Vec2,
     prev_pos: Vec2,
     prev_angle: f32,
-    angle_constraint: f32,
+    angle_min: f32,
+    angle_max: f32,
     rest_length: f32,
     nodes: &mut Query<&mut Node>,
 ) -> Option<(f32, Vec2)> {
     let cur_angle = (cur_pos - prev_pos).to_angle();
-    let constrained_angle = constrain_angle(cur_angle, prev_angle, angle_constraint);
+    let constrained_angle = constrain_angle(cur_angle, prev_angle, angle_min, angle_max);
     let target = prev_pos + Vec2::from_angle(constrained_angle) * rest_length;
     let shift = target - cur_pos;
 
@@ -370,22 +372,6 @@ fn handle_movable_in_chain(
     }
 
     Some((constrained_angle, target))
-}
-
-fn constrain_angle(angle: f32, anchor: f32, constraint: f32) -> f32 {
-    let diff = relative_angle_diff(angle, anchor);
-    if diff.abs() <= constraint {
-        normalize_angle_to_positive(angle)
-    } else if diff > constraint {
-        normalize_angle_to_positive(anchor - constraint)
-    } else {
-        normalize_angle_to_positive(anchor + constraint)
-    }
-}
-
-fn relative_angle_diff(angle: f32, anchor: f32) -> f32 {
-    let shifted = normalize_angle_to_positive(angle + std::f32::consts::PI - anchor);
-    std::f32::consts::PI - shifted
 }
 
 fn solve_distance(constraint: &DistanceConstraint, nodes: &mut Query<&mut Node>) {

@@ -42,20 +42,20 @@ pub const ACTION_BTN_HEIGHT: f32 = 32.0;
 // Slider Ranges & Value Tweaks
 // =============================================================================
 
-pub const ANGLE_LIMIT_RANGE: RangeInclusive<f32> = 0.0..=180.0;
+pub const ANGLE_LIMIT_RANGE: RangeInclusive<f32> = -180.0..=180.0;
 
 pub const LIMB_MAX_REACH_RANGE: RangeInclusive<f32> = 10.0..=500.0;
 pub const LIMB_ANGLE_OFFSET_RANGE: RangeInclusive<f32> = -180.0..=180.0;
 pub const LIMB_STEP_THRESHOLD_RANGE: RangeInclusive<f32> = 0.0..=200.0;
-pub const LIMB_STEP_SPEED_RANGE: RangeInclusive<f32> = 0.1..=20.0;
-pub const LIMB_STEP_HEIGHT_RANGE: RangeInclusive<f32> = 0.0..=100.0;
+pub const LIMB_STEP_SPEED_RANGE: RangeInclusive<f32> = 1.0..=20.0;
+pub const LIMB_STEP_HEIGHT_RANGE: RangeInclusive<f32> = 1.0..=100.0;
 
-pub const MOVEMENT_SPEED_RANGE: RangeInclusive<f32> = 1.0..=50.0;
+pub const MOVEMENT_SPEED_RANGE: RangeInclusive<f32> = 1.0..=20.0;
 pub const PATH_AMPLITUDE_RANGE: RangeInclusive<f32> = 10.0..=200.0;
 
 pub const COLLISION_DAMPING_RANGE: RangeInclusive<f32> = 0.0..=1.0;
 
-pub const NODE_RADIUS_RANGE: RangeInclusive<f32> = 4.0..=50.0;
+pub const NODE_RADIUS_RANGE: RangeInclusive<f32> = 4.0..=150.0;
 
 pub const PLAYGROUND_HALF_SIZE_RANGE: RangeInclusive<f32> = 400.0..=2000.0;
 

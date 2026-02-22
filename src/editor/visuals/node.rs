@@ -56,7 +56,7 @@ pub fn spawn_node_visuals(
             let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
             let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
 
-            let alpha = if node.node_type == NodeType::Anchor { 1.0 } else { 0.0 };
+            let alpha = if node.is_head { 1.0 } else { 0.0 };
             let eye_mesh = meshes.add(create_filled_circle_mesh(EYE_RADIUS, CONTACT_SEGMENTS));
             let eye_mat = materials.add(ColorMaterial::from_color(EYE_COLOR.with_alpha(alpha)));
             spawn_eye(parent, eye_mesh.clone(), eye_mat.clone(), r_eye, 1.0);
@@ -112,7 +112,7 @@ pub fn sync_node_visuals(
                             }
                         }
                     } else if sync_params.eye_children.contains(child) {
-                        material.color = if is_anchor {
+                        material.color = if node.is_head {
                             EYE_COLOR
                         } else {
                             EYE_COLOR.with_alpha(0.0)
@@ -136,16 +136,16 @@ pub fn sync_node_visuals(
 
         let offsets = [right_offset, left_offset];
         sync_contact_positions(children, &offsets, &mut sync_params);
+        
+        if node.is_head {
+            let eye_dist = node.radius * EYE_DISTANCE_RATIO;
+            let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
+            let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+            let eye_offsets = [r_eye, l_eye];
+            sync_eye_positions(children, &eye_offsets, &mut sync_params);
+        }
 
         if is_anchor || show_target {
-            if is_anchor {
-                let eye_dist = node.radius * EYE_DISTANCE_RATIO;
-                let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
-                let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
-                let eye_offsets = [r_eye, l_eye];
-                sync_eye_positions(children, &eye_offsets, &mut sync_params);
-            }
-
             let mut targets = Vec::new();
             if is_anchor {
                 targets.push(node.target_position);

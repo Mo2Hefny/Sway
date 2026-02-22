@@ -83,7 +83,7 @@ fn move_toward_target(
             if let Some(&child_pos) = child_positions.get(&child_entity) {
                 let current_chain_angle = (child_pos - node.position).to_angle();
                 let angle_diff = normalize_angle(desired_angle - current_chain_angle);
-                let clamped_diff = angle_diff.clamp(-node.angle_constraint, node.angle_constraint);
+                let clamped_diff = angle_diff.clamp(node.angle_min, node.angle_max);
                 node.chain_angle = normalize_angle(current_chain_angle + clamped_diff);
             } else {
                 node.chain_angle = desired_angle;
