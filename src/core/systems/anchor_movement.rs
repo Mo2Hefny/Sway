@@ -260,7 +260,10 @@ fn is_in_corner(out_left: bool, out_right: bool, out_bottom: bool, out_top: bool
 }
 
 fn flip_direction_at_corner(node: &mut Node, new_target: &mut Vec2, bounds: &SafeBounds, dt: f32) {
-    node.wander_direction += STUCK_TURN_SPEED * dt;
+    let center_dir = (bounds.min + (bounds.max - bounds.min) * 0.5 - node.position).normalize_or_zero();
+    let target_angle = center_dir.y.atan2(center_dir.x);
+    
+    node.wander_direction = steer_smoothly(node.wander_direction, target_angle, STUCK_TURN_SPEED * 2.0 * dt);
     node.wander_direction = normalize_angle(node.wander_direction);
 
     let new_angle = node.wander_direction;
@@ -281,7 +284,7 @@ fn handle_single_axis_boundary(
     out_top: bool,
     dt: f32,
 ) {
-    let turn_amount = STUCK_TURN_SPEED * dt;
+    let turn_amount = STUCK_TURN_SPEED * 3.0 * dt;
 
     if out_left {
         new_target.x = bounds.min.x;
@@ -316,17 +319,26 @@ fn smooth_target_position(node: &Node, new_target: Vec2) -> Vec2 {
 
 fn calculate_boundary_steering(point: Vec2, bounds: &SafeBounds, current_angle: f32, strength: f32) -> f32 {
     let mut steering = 0.0_f32;
+    let avoidance_strength = strength * 2.0;
 
-    if point.x < bounds.min.x {
-        steering += angle_diff(0.0, current_angle) * strength;
-    } else if point.x > bounds.max.x {
-        steering += angle_diff(std::f32::consts::PI, current_angle) * strength;
+    if point.x < bounds.min.x + BOUNDARY_AVOIDANCE_RANGE {
+        let dist = (point.x - bounds.min.x).max(0.1);
+        let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
+        steering += angle_diff(0.0, current_angle) * avoidance_strength * weight;
+    } else if point.x > bounds.max.x - BOUNDARY_AVOIDANCE_RANGE {
+        let dist = (bounds.max.x - point.x).max(0.1);
+        let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
+        steering += angle_diff(std::f32::consts::PI, current_angle) * avoidance_strength * weight;
     }
 
-    if point.y < bounds.min.y {
-        steering += angle_diff(std::f32::consts::FRAC_PI_2, current_angle) * strength;
-    } else if point.y > bounds.max.y {
-        steering += angle_diff(-std::f32::consts::FRAC_PI_2, current_angle) * strength;
+    if point.y < bounds.min.y + BOUNDARY_AVOIDANCE_RANGE {
+        let dist = (point.y - bounds.min.y).max(0.1);
+        let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
+        steering += angle_diff(std::f32::consts::FRAC_PI_2, current_angle) * avoidance_strength * weight;
+    } else if point.y > bounds.max.y - BOUNDARY_AVOIDANCE_RANGE {
+        let dist = (bounds.max.y - point.y).max(0.1);
+        let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
+        steering += angle_diff(-std::f32::consts::FRAC_PI_2, current_angle) * avoidance_strength * weight;
     }
 
     steering
