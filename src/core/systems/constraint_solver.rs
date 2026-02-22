@@ -234,7 +234,7 @@ fn build_cycle_chain(
             break;
         }
 
-        let (next_node, rest_len) = select_cycle_neighbor(&non_limb, prev);
+        let (next_node, rest_len) = select_cycle_neighbor(&non_limb, prev, visited);
 
         chain.push(ChainLink {
             entity: current,
@@ -251,23 +251,32 @@ fn build_cycle_chain(
             });
             break;
         }
+
+        if is_visited(visited, current) {
+            break;
+        }
     }
 
     Some(chain)
 }
 
-fn select_cycle_neighbor(neighbors: &[(Entity, f32)], prev: Entity) -> (Entity, f32) {
-    if prev == Entity::PLACEHOLDER || neighbors[0].0 == prev {
-        if prev == Entity::PLACEHOLDER {
-            neighbors[0]
-        } else if neighbors.len() > 1 {
-            neighbors[1]
-        } else {
-            neighbors[0]
+fn select_cycle_neighbor(
+    neighbors: &[(Entity, f32)],
+    prev: Entity,
+    visited: &HashMap<Entity, bool>,
+) -> (Entity, f32) {
+    for &(entity, rest_len) in neighbors {
+        if entity != prev && !is_visited(visited, entity) {
+            return (entity, rest_len);
         }
-    } else {
-        neighbors[0]
     }
+    // Fallback: any non-prev neighbor
+    for &(entity, rest_len) in neighbors {
+        if entity != prev {
+            return (entity, rest_len);
+        }
+    }
+    neighbors[0]
 }
 
 fn find_standalone_constraints(

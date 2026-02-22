@@ -60,6 +60,8 @@ pub const PLAYGROUND_BORDER_COLOR: Color = Color::srgb(0.4, 0.45, 0.5);
 
 pub const CONSTRAINT_COLOR: Color = Color::srgba(0.5, 0.7, 0.9, 0.8);
 pub const CONSTRAINT_PREVIEW_COLOR: Color = Color::srgba(0.5, 0.7, 0.9, 0.3);
+pub const CONSTRAINT_PREVIEW_INVALID_COLOR: Color = Color::srgba(1.0, 0.3, 0.3, 0.5);
+pub const MAX_NORMAL_NODE_CONNECTIONS: usize = 2;
 pub const CONSTRAINT_LINE_THICKNESS: f32 = 2.0;
 pub const CONSTRAINT_DASH_LENGTH: f32 = 6.0;
 pub const CONSTRAINT_GAP_LENGTH: f32 = 4.0;
