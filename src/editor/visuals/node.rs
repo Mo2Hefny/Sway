@@ -4,11 +4,11 @@ use bevy::prelude::*;
 use bevy::ecs::relationship::Relationship;
 
 use crate::editor::visuals::params::*;
-use crate::editor::mesh::primitives::{create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
+use crate::editor::mesh::primitives::{create_arc_mesh, create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
 use crate::core::components::LimbSet;
 use crate::core::{Node, NodeType};
 use crate::editor::components::{
-    ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
+    AngleArc, ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
 };
 use crate::editor::constants::*;
 use crate::ui::state::DisplaySettings;
@@ -72,6 +72,13 @@ pub fn spawn_node_visuals(
             ));
             let dir_mat = materials.add(ColorMaterial::from_color(DIRECTION_VECTOR_COLOR.with_alpha(alpha)));
             spawn_direction_vector(parent, dir_mesh, dir_mat);
+
+            let arc_radius = node.radius * 0.85;
+            let arc_start = node.chain_angle + node.angle_min;
+            let arc_end = node.chain_angle + node.angle_max;
+            let arc_mesh = meshes.add(create_arc_mesh(arc_radius, arc_start, arc_end, ANGLE_ARC_SEGMENTS));
+            let arc_mat = materials.add(ColorMaterial::from_color(ANGLE_ARC_COLOR));
+            spawn_angle_arc(parent, arc_mesh, arc_mat);
         });
 
         commands
@@ -136,6 +143,17 @@ pub fn sync_node_visuals(
 
         let offsets = [right_offset, left_offset];
         sync_contact_positions(children, &offsets, &mut sync_params);
+
+        let arc_radius = node.radius * 0.85;
+        let arc_start = node.chain_angle + node.angle_min;
+        let arc_end = node.chain_angle + node.angle_max;
+        for child in children.iter() {
+            if sync_params.arc_children.contains(child) {
+                if let Ok(mut mesh_handle) = sync_params.arc_query.get_mut(child) {
+                    mesh_handle.0 = sync_params.meshes.add(create_arc_mesh(arc_radius, arc_start, arc_end, ANGLE_ARC_SEGMENTS));
+                }
+            }
+        }
         
         if node.is_head {
             let eye_dist = node.radius * EYE_DISTANCE_RATIO;
@@ -209,6 +227,9 @@ pub fn update_debug_visibility(mut params: NodeVisibilityParams) {
         *v = vis;
     }
     for mut v in params.dirs.iter_mut() {
+        *v = vis;
+    }
+    for mut v in params.arcs.iter_mut() {
         *v = vis;
     }
 }
@@ -290,6 +311,20 @@ fn spawn_direction_vector(parent: &mut ChildSpawnerCommands, mesh: Handle<Mesh>,
         Mesh2d(mesh),
         MeshMaterial2d(material),
         Transform::from_translation(Vec3::new(0.0, 0.0, 0.25)),
+    ));
+}
+
+fn spawn_angle_arc(
+    parent: &mut ChildSpawnerCommands,
+    mesh: Handle<Mesh>,
+    material: Handle<ColorMaterial>,
+) {
+    parent.spawn((
+        Name::new("Angle Arc"),
+        AngleArc,
+        Mesh2d(mesh),
+        MeshMaterial2d(material),
+        Transform::from_translation(Vec3::new(0.0, 0.0, 0.05)),
     ));
 }
 

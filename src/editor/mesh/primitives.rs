@@ -229,3 +229,29 @@ pub fn create_x_marker_mesh(size: f32, thickness: f32) -> Mesh {
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
         .with_inserted_indices(Indices::U32(indices))
 }
+
+/// Creates a filled arc mesh from `start_angle` to `end_angle`.
+pub fn create_arc_mesh(radius: f32, start_angle: f32, end_angle: f32, segments: usize) -> Mesh {
+    let segments = segments.max(1);
+    let mut positions = Vec::with_capacity(segments + 2);
+    let mut indices = Vec::with_capacity(segments * 3);
+
+    positions.push([0.0, 0.0, 0.0]); // Center vertex
+
+    let sweep = end_angle - start_angle;
+    for i in 0..=segments {
+        let t = i as f32 / segments as f32;
+        let angle = start_angle + sweep * t;
+        positions.push([angle.cos() * radius, angle.sin() * radius, 0.0]);
+    }
+
+    for i in 0..segments {
+        indices.push(0);
+        indices.push((i + 1) as u32);
+        indices.push((i + 2) as u32);
+    }
+
+    Mesh::new(PrimitiveTopology::TriangleList, default())
+        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+        .with_inserted_indices(Indices::U32(indices))
+}
