@@ -23,6 +23,7 @@ pub fn fabrik_solving_system(
     let inner_min = playground.inner_min();
     let inner_max = playground.inner_max();
     let graph_changed = graph.is_changed();
+    let mut positions_buf: Vec<Vec2> = Vec::new();
 
     for (body_entity, mut limb_set) in limb_sets.iter_mut() {
         for limb_idx in 0..limb_set.limbs.len() {
@@ -45,6 +46,7 @@ pub fn fabrik_solving_system(
                 inner_max,
                 graph_changed,
                 dt,
+                &mut positions_buf,
             );
         }
     }
@@ -64,6 +66,7 @@ fn solve_single_limb(
     inner_max: Vec2,
     graph_changed: bool,
     dt: f32,
+    positions: &mut Vec<Vec2>,
 ) {
     let joint_count = limb.joints.len();
     if joint_count < 1 {
@@ -86,7 +89,8 @@ fn solve_single_limb(
     let target = clamp_target(limb.target, inner_min, inner_max);
 
     let chain_len = joint_count + 1;
-    let mut positions = Vec::with_capacity(chain_len);
+    positions.clear();
+    positions.reserve(chain_len);
     positions.push(body_pos);
     for &entity in &limb.joints {
         if let Ok(node) = nodes.get(entity) {
@@ -145,7 +149,7 @@ fn solve_single_limb(
             }
 
             if joint_count > 1 {
-                apply_joint_constraints(&mut positions, limb);
+                apply_joint_constraints(positions, limb);
             }
 
             let diff = positions[last].distance(target);
@@ -159,12 +163,8 @@ fn solve_single_limb(
         if let Ok(mut node) = nodes.get_mut(entity) {
             node.position = positions[i + 1];
 
-            // Update chain_angle
             let prev_pos = positions[i];
             let curr_pos = positions[i + 1];
-            
-            // For the last node (tip), use direction from previous
-            // For others, use direction to next (or average of prev/next if we wanted to be fancy, but simpler is better for now)
             let angle = if i < limb.joints.len() - 1 {
                  let next_pos = positions[i + 2];
                  (next_pos - curr_pos).to_angle()
@@ -274,10 +274,8 @@ fn compute_ideal_target(
     let target_angle = body_angle + limb.target_direction_offset;
     let target_dir = Vec2::from_angle(target_angle);
 
-    let mut ray_end = body_pos + target_dir * limb.max_reach;
-    ray_end = ray_cast_aabb(body_pos, ray_end, inner_min, inner_max);
-
-    ray_end
+    let ray_end = body_pos + target_dir * limb.max_reach;
+    ray_cast_aabb(body_pos, ray_end, inner_min, inner_max)
 }
 
 fn constrain_distance(pos: Vec2, anchor: Vec2, distance: f32) -> Vec2 {
