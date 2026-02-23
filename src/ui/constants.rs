@@ -65,7 +65,7 @@ pub const PLAYGROUND_HALF_SIZE_RANGE: RangeInclusive<f32> = 400.0..=2000.0;
 
 pub const HINT_ANCHOR_OFFSET: (f32, f32) = (16.0, -16.0);
 pub const HINT_ITEM_SPACING: (f32, f32) = (0.0, 2.0);
-pub const HINT_COLOR: (f32, f32, f32, f32) = (0.6, 0.6, 0.6, 0.5);
+pub const HINT_COLOR: (f32, f32, f32, f32) = (0.8, 0.8, 0.8, 0.6);
 
 pub const WIDGET_DRAG_SPEED: f32 = 1.0;
 pub const WIDGET_DRAG_SPEED_FINE: f32 = 0.1;

@@ -82,8 +82,6 @@ pub const PLAYBACK_PAUSE: &str = "Pause";
 // Instructions Overlay
 // =============================================================================
 
-pub const HINT_SELECT: &str = "Select: S";
 pub const HINT_FOLLOW_NODE: &str = "Follow Node: F";
-pub const HINT_MOVE: &str = "Move: G";
 pub const HINT_TOGGLE_UI: &str = "Toggle UI: H";
 pub const HINT_PLAY: &str = "Play/Pause: Space";
