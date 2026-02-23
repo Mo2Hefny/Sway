@@ -168,7 +168,15 @@ fn calculate_safe_bounds(playground: &Playground, radius: f32) -> SafeBounds {
 
 fn apply_natural_drift(node: &mut Node, t: f32) {
     let direction_drift = (t * 0.3).sin() * 0.15 + (t * 0.17).sin() * 0.08;
-    node.wander_direction += direction_drift * 0.008;
+    let current_angle = node.wander_direction;
+    let horizontal_pull = if current_angle.abs() < std::f32::consts::FRAC_PI_2 {
+        -current_angle * HORIZONTAL_WANDER_BIAS
+    } else {
+        let target = if current_angle > 0.0 { std::f32::consts::PI } else { -std::f32::consts::PI };
+        (target - current_angle) * HORIZONTAL_WANDER_BIAS
+    };
+
+    node.wander_direction += (direction_drift * 0.008) + horizontal_pull;
 }
 
 fn calculate_wander_angle(node: &Node, t: f32) -> f32 {
@@ -284,23 +292,29 @@ fn handle_single_axis_boundary(
     out_top: bool,
     dt: f32,
 ) {
-    let turn_amount = STUCK_TURN_SPEED * 3.0 * dt;
+    let turn_amount = STUCK_TURN_SPEED * 4.0 * dt;
 
     if out_left {
-        new_target.x = bounds.min.x;
+        let overshoot = bounds.min.x - new_target.x;
+        new_target.x = bounds.min.x + overshoot * BOUNDARY_REFLECTION_FACTOR;
         node.wander_direction = steer_smoothly(node.wander_direction, 0.0, turn_amount);
     } else if out_right {
-        new_target.x = bounds.max.x;
+        let overshoot = new_target.x - bounds.max.x;
+        new_target.x = bounds.max.x - overshoot * BOUNDARY_REFLECTION_FACTOR;
         node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::PI, turn_amount);
     }
 
     if out_bottom {
-        new_target.y = bounds.min.y;
+        let overshoot = bounds.min.y - new_target.y;
+        new_target.y = bounds.min.y + overshoot * BOUNDARY_REFLECTION_FACTOR;
         node.wander_direction = steer_smoothly(node.wander_direction, std::f32::consts::FRAC_PI_2, turn_amount);
     } else if out_top {
-        new_target.y = bounds.max.y;
+        let overshoot = new_target.y - bounds.max.y;
+        new_target.y = bounds.max.y - overshoot * BOUNDARY_REFLECTION_FACTOR;
         node.wander_direction = steer_smoothly(node.wander_direction, -std::f32::consts::FRAC_PI_2, turn_amount);
     }
+
+    clamp_to_bounds(new_target, bounds);
 }
 
 fn handle_stuck_detection(node: &mut Node, new_target: &Vec2, dt: f32) {
@@ -319,7 +333,7 @@ fn smooth_target_position(node: &Node, new_target: Vec2) -> Vec2 {
 
 fn calculate_boundary_steering(point: Vec2, bounds: &SafeBounds, current_angle: f32, strength: f32) -> f32 {
     let mut steering = 0.0_f32;
-    let avoidance_strength = strength * 2.0;
+    let avoidance_strength = strength * 2.5;
 
     if point.x < bounds.min.x + BOUNDARY_AVOIDANCE_RANGE {
         let dist = (point.x - bounds.min.x).max(0.1);
@@ -334,11 +348,13 @@ fn calculate_boundary_steering(point: Vec2, bounds: &SafeBounds, current_angle: 
     if point.y < bounds.min.y + BOUNDARY_AVOIDANCE_RANGE {
         let dist = (point.y - bounds.min.y).max(0.1);
         let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
-        steering += angle_diff(std::f32::consts::FRAC_PI_2, current_angle) * avoidance_strength * weight;
+        let target = if current_angle.cos() > 0.0 { 0.2 } else { std::f32::consts::PI - 0.2 };
+        steering += angle_diff(target, current_angle) * avoidance_strength * weight;
     } else if point.y > bounds.max.y - BOUNDARY_AVOIDANCE_RANGE {
         let dist = (bounds.max.y - point.y).max(0.1);
         let weight = (1.0 - (dist / BOUNDARY_AVOIDANCE_RANGE).min(1.0)).powi(2);
-        steering += angle_diff(-std::f32::consts::FRAC_PI_2, current_angle) * avoidance_strength * weight;
+        let target = if current_angle.cos() > 0.0 { -0.2 } else { -std::f32::consts::PI + 0.2 };
+        steering += angle_diff(target, current_angle) * avoidance_strength * weight;
     }
 
     steering
