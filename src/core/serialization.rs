@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use super::components::{DistanceConstraint, Limb, LimbSet, Node};
 
@@ -80,8 +81,9 @@ pub fn build_scene_data(
     limb_sets: &Query<(Entity, &mut LimbSet)>,
 ) -> SceneData {
     let (entity_list, node_list) = extract_node_data(nodes);
-    let constraint_list = extract_constraint_data(constraints, &entity_list);
-    let limb_set_list = extract_limb_set_data(limb_sets, &entity_list);
+    let entity_map: HashMap<Entity, usize> = entity_list.iter().enumerate().map(|(i, &e)| (e, i)).collect();
+    let constraint_list = extract_constraint_data(constraints, &entity_map);
+    let limb_set_list = extract_limb_set_data(limb_sets, &entity_map);
 
     SceneData {
         nodes: node_list,
@@ -199,13 +201,13 @@ fn extract_node_data(nodes: &Query<(Entity, &mut Node)>) -> (Vec<Entity>, Vec<No
 
 fn extract_constraint_data(
     constraints: &Query<(Entity, &DistanceConstraint)>,
-    entity_list: &[Entity],
+    entity_map: &HashMap<Entity, usize>,
 ) -> Vec<ConstraintData> {
     constraints
         .iter()
         .map(|(_, c)| ConstraintData {
-            node_a: find_entity_index(c.node_a, entity_list),
-            node_b: find_entity_index(c.node_b, entity_list),
+            node_a: *entity_map.get(&c.node_a).unwrap_or(&0),
+            node_b: *entity_map.get(&c.node_b).unwrap_or(&0),
             rest_length: c.rest_length,
         })
         .collect()
@@ -213,12 +215,12 @@ fn extract_constraint_data(
 
 fn extract_limb_set_data(
     limb_sets: &Query<(Entity, &mut LimbSet)>,
-    entity_list: &[Entity],
+    entity_map: &HashMap<Entity, usize>,
 ) -> Vec<LimbSetData> {
     limb_sets
         .iter()
         .map(|(entity, limb_set)| LimbSetData {
-            body_node: find_entity_index(entity, entity_list),
+            body_node: *entity_map.get(&entity).unwrap_or(&0),
             limbs: limb_set
                 .limbs
                 .iter()
@@ -226,14 +228,14 @@ fn extract_limb_set_data(
                     joints: l
                         .joints
                         .iter()
-                        .map(|&e| find_entity_index(e, entity_list))
+                        .map(|e| *entity_map.get(e).unwrap_or(&0))
                         .collect(),
                     target: l.target,
                     lengths: l.lengths.clone(),
                     iterations: l.iterations,
                     tolerance: l.tolerance,
                     flip_bend: l.flip_bend.clone(),
-                    target_node: l.target_node.map(|e| find_entity_index(e, entity_list)),
+                    target_node: l.target_node.map(|e| *entity_map.get(&e).unwrap_or(&0)),
                     max_reach: l.max_reach,
                     target_direction_offset: l.target_direction_offset,
                     step_threshold: l.step_threshold,
@@ -247,10 +249,6 @@ fn extract_limb_set_data(
                 .collect(),
         })
         .collect()
-}
-
-fn find_entity_index(entity: Entity, entity_list: &[Entity]) -> usize {
-    entity_list.iter().position(|&e| e == entity).unwrap_or(0)
 }
 
 fn spawn_nodes(commands: &mut Commands, scene: &SceneData) -> Vec<Entity> {
