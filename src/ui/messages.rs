@@ -77,7 +77,6 @@ pub const TOOL_MOVE: &str = "Move";
 
 pub const PLAYBACK_PLAY: &str = "Play";
 pub const PLAYBACK_PAUSE: &str = "Pause";
-pub const PLAYBACK_STOP: &str = "Stop";
 
 // =============================================================================
 // Instructions Overlay

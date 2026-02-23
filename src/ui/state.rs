@@ -105,9 +105,8 @@ pub struct EditorToolState {
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Reflect)]
 pub enum PlaybackMode {
     Playing,
-    Paused,
     #[default]
-    Stopped,
+    Paused,
 }
 
 /// Shared resource that gates simulation systems.
@@ -129,14 +128,10 @@ impl PlaybackState {
         self.mode = PlaybackMode::Paused;
     }
 
-    pub fn stop(&mut self) {
-        self.mode = PlaybackMode::Stopped;
-    }
-
     pub fn toggle(&mut self) {
         self.mode = match self.mode {
             PlaybackMode::Playing => PlaybackMode::Paused,
-            PlaybackMode::Paused | PlaybackMode::Stopped => PlaybackMode::Playing,
+            PlaybackMode::Paused => PlaybackMode::Playing,
         };
     }
 }

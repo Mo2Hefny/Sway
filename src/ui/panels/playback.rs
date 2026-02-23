@@ -57,23 +57,6 @@ pub fn draw_playback_toolbar(
                     if pause_btn.clicked() {
                         playback.pause();
                     }
-                    let stop_btn = match icons.stop {
-                        Some(tid) => ui.add_sized(
-                            egui::vec2(BOTTOM_TOOLBAR_BTN_SIZE, BOTTOM_TOOLBAR_BTN_SIZE),
-                            egui::Button::new(egui::Image::new(egui::load::SizedTexture::new(
-                                tid,
-                                egui::vec2(BOTTOM_TOOLBAR_ICON_SIZE, BOTTOM_TOOLBAR_ICON_SIZE),
-                            )))
-                            .fill(to_egui_color(SURFACE)),
-                        ),
-                        None => ui.add_sized(
-                            egui::vec2(BOTTOM_TOOLBAR_BTN_SIZE, BOTTOM_TOOLBAR_BTN_SIZE),
-                            egui::Button::new("⏹").fill(to_egui_color(SURFACE)),
-                        ),
-                    };
-                    if stop_btn.clicked() {
-                        playback.stop();
-                    }
                 });
             });
         });

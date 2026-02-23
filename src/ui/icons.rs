@@ -20,7 +20,6 @@ pub struct UiIcons {
     pub move_tool: Handle<Image>,
     pub play: Handle<Image>,
     pub pause: Handle<Image>,
-    pub stop: Handle<Image>,
     pub checkmark: Handle<Image>,
 }
 
@@ -84,7 +83,6 @@ impl UiIcons {
             move_tool: Self::rasterize_svg(images, include_bytes!("../assets/icons/move-cursor.svg"), ICON_SIZE),
             play: Self::rasterize_svg(images, include_bytes!("../assets/icons/play.svg"), ICON_SIZE),
             pause: Self::rasterize_svg(images, include_bytes!("../assets/icons/pause.svg"), ICON_SIZE),
-            stop: Self::rasterize_svg(images, include_bytes!("../assets/icons/stop.svg"), ICON_SIZE),
             checkmark: Self::rasterize_svg(images, include_bytes!("../assets/icons/x.svg"), ICON_SIZE),
         }
     }
@@ -113,7 +111,6 @@ pub struct EguiIconTextures {
     pub move_tool: Option<egui::TextureId>,
     pub play: Option<egui::TextureId>,
     pub pause: Option<egui::TextureId>,
-    pub stop: Option<egui::TextureId>,
     pub checkmark: Option<egui::TextureId>,
 }
 
@@ -136,7 +133,6 @@ impl EguiIconTextures {
         self.move_tool = Some(contexts.add_image(EguiTextureHandle::Strong(icons.move_tool.clone())));
         self.play = Some(contexts.add_image(EguiTextureHandle::Strong(icons.play.clone())));
         self.pause = Some(contexts.add_image(EguiTextureHandle::Strong(icons.pause.clone())));
-        self.stop = Some(contexts.add_image(EguiTextureHandle::Strong(icons.stop.clone())));
         self.checkmark = Some(contexts.add_image(EguiTextureHandle::Strong(icons.checkmark.clone())));
     }
 }
