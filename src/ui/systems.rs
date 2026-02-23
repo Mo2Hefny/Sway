@@ -122,6 +122,7 @@ pub fn apply_editor_actions(
     mut pending_file_op: ResMut<PendingFileOp>,
     mut pending_actions: ResMut<PendingConstraintActions>,
     mut selection: ResMut<Selection>,
+    panel_state: Res<FloatingPanelState>,
     node_query: Query<(Entity, &mut SimNode)>,
     mut constraint_query: Query<(Entity, &mut DistanceConstraint)>,
     visual_entities: Query<Entity, Or<(With<NodeVisual>, With<ConstraintVisual>, With<ConstraintPreview>)>>,
@@ -129,16 +130,18 @@ pub fn apply_editor_actions(
     let scene_to_import = import_requested.0.take().or(pending_file_op.import_data.take());
     if let Some(scene) = scene_to_import {
         selection.deselect();
-        for e in visual_entities.iter() {
-            commands.entity(e).despawn();
-        }
-        let constraint_list: Vec<Entity> = constraint_query.iter().map(|(e, _)| e).collect();
-        for e in constraint_list {
-            commands.entity(e).despawn();
-        }
-        let node_list: Vec<Entity> = node_query.iter().map(|(e, _)| e).collect();
-        for e in node_list {
-            commands.entity(e).despawn();
+        if panel_state.clear_on_import {
+            for e in visual_entities.iter() {
+                commands.entity(e).despawn();
+            }
+            let constraint_list: Vec<Entity> = constraint_query.iter().map(|(e, _)| e).collect();
+            for e in constraint_list {
+                commands.entity(e).despawn();
+            }
+            let node_list: Vec<Entity> = node_query.iter().map(|(e, _)| e).collect();
+            for e in node_list {
+                commands.entity(e).despawn();
+            }
         }
         spawn_scene_data(&mut commands, &scene);
     }

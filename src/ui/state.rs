@@ -25,10 +25,21 @@ impl Default for DisplaySettings {
     }
 }
 
-#[derive(Resource, Clone, Debug, Default)]
+#[derive(Resource, Clone, Debug)]
 pub struct FloatingPanelState {
     pub collapsed: bool,
     pub selected_example: Option<usize>,
+    pub clear_on_import: bool,
+}
+
+impl Default for FloatingPanelState {
+    fn default() -> Self {
+        Self {
+            collapsed: false,
+            selected_example: None,
+            clear_on_import: true,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]

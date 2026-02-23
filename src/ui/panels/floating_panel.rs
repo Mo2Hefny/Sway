@@ -85,6 +85,7 @@ pub fn draw_floating_panel(
                             display_settings.show_debug = debug;
                         }
                         ui.add_space(PANEL_SECTION_SPACING);
+                        ui.checkbox(&mut panel_state.clear_on_import, LABEL_CLEAR_ON_IMPORT);
                         if ui.button(BTN_IMPORT).clicked() {
                             if let Some(scene) = import_from_file() {
                                 import_requested.0 = Some(scene);

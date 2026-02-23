@@ -10,6 +10,7 @@ pub const LABEL_SHOW_NODES: &str = "Show Nodes";
 pub const LABEL_SHOW_DEBUG: &str = "Show Debug";
 pub const BTN_IMPORT: &str = "Import";
 pub const BTN_EXPORT: &str = "Export";
+pub const LABEL_CLEAR_ON_IMPORT: &str = "Clear on Import";
 pub const LABEL_PLAYGROUND_SIZE: &str = "Playground Size";
 pub const LABEL_HALF_HEIGHT: &str = "Size:";
 
