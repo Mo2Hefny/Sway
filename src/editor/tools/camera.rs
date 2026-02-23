@@ -4,7 +4,7 @@ use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::prelude::*;
 
 use crate::core::Playground;
-use crate::editor::constants::{CAMERA_LERP_FACTOR, ZOOM_MAX, ZOOM_MIN, ZOOM_SPEED};
+use crate::editor::constants::{CAMERA_LERP_FACTOR, DEFAULT_ZOOM, ZOOM_MAX, ZOOM_MIN, ZOOM_SPEED};
 use crate::ui::state::{EditorTool, EditorToolState, InputState};
 
 use super::input::cursor_screen_pos;
@@ -19,7 +19,7 @@ pub struct CameraState {
 impl Default for CameraState {
     fn default() -> Self {
         Self {
-            zoom: 1.0,
+            zoom: DEFAULT_ZOOM,
             last_drag_pos: None,
             follow_selection: false,
         }

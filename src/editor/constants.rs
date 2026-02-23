@@ -126,5 +126,6 @@ pub const DIRECTION_VECTOR_COLOR: Color = Color::srgba(0.3, 0.8, 1.0, 0.6);
 
 pub const ZOOM_MIN: f32 = 0.05;
 pub const ZOOM_MAX: f32 = 2.0;
+pub const DEFAULT_ZOOM: f32 = 1.25;
 pub const ZOOM_SPEED: f32 = 0.1;
 pub const CAMERA_LERP_FACTOR: f32 = 0.1;
