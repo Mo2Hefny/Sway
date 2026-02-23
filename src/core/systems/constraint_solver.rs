@@ -1,7 +1,7 @@
 //! Iterative distance-constraint solver.
 
 use bevy::prelude::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::core::components::{DistanceConstraint, Node, NodeType};
 use crate::core::constants::*;
@@ -52,7 +52,7 @@ fn build_chains(
     nodes: &Query<&mut Node>,
 ) -> (Vec<Vec<ChainLink>>, Vec<DistanceConstraint>) {
     let adj = &graph.adjacency;
-    let mut visited: HashMap<Entity, bool> = HashMap::new();
+    let mut visited: HashSet<Entity> = HashSet::new();
     let mut chains: Vec<Vec<ChainLink>> = Vec::new();
 
     let starts = find_chain_starts(adj, nodes);
@@ -62,7 +62,7 @@ fn build_chains(
             continue;
         }
 
-        if is_visited(&visited, start) {
+        if visited.contains(&start) {
             continue;
         }
 
@@ -71,7 +71,7 @@ fn build_chains(
             if is_limb_node(next, nodes) {
                 continue;
             }
-            if is_visited(&visited, next) {
+            if visited.contains(&next) {
                 continue;
             }
 
@@ -124,8 +124,8 @@ fn is_leaf_node(neighbors: &[(Entity, f32)]) -> bool {
     neighbors.len() == 1
 }
 
-fn is_visited(visited: &HashMap<Entity, bool>, entity: Entity) -> bool {
-    *visited.get(&entity).unwrap_or(&false)
+fn is_visited(visited: &HashSet<Entity>, entity: Entity) -> bool {
+    visited.contains(&entity)
 }
 
 fn build_chain_from_endpoint(
@@ -133,14 +133,14 @@ fn build_chain_from_endpoint(
     next: Entity,
     rest_len: f32,
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
-    visited: &mut HashMap<Entity, bool>,
+    visited: &mut HashSet<Entity>,
     nodes: &Query<&mut Node>,
 ) -> Option<Vec<ChainLink>> {
     let mut chain: Vec<ChainLink> = vec![ChainLink {
         entity: start,
         rest_length: rest_len,
     }];
-    visited.insert(start, true);
+    visited.insert(start);
 
     let mut current = next;
     let mut prev = start;
@@ -148,19 +148,18 @@ fn build_chain_from_endpoint(
     loop {
         let cur_neighbors = adj.get(&current)?;
 
-        let non_limb_neighbors: Vec<(Entity, f32)> = cur_neighbors
+        let non_limb_count = cur_neighbors
             .iter()
             .filter(|(e, _)| !is_limb_node(*e, nodes))
-            .copied()
-            .collect();
+            .count();
 
-        if is_middle_of_chain(&non_limb_neighbors) {
-            let (next_node, next_rest) = find_next_neighbor(&non_limb_neighbors, prev);
+        if non_limb_count == 2 {
+            let (next_node, next_rest) = find_next_non_limb_neighbor(cur_neighbors, prev, nodes);
             chain.push(ChainLink {
                 entity: current,
                 rest_length: next_rest,
             });
-            visited.insert(current, true);
+            visited.insert(current);
             prev = current;
             current = next_node;
         } else {
@@ -168,7 +167,7 @@ fn build_chain_from_endpoint(
                 entity: current,
                 rest_length: 0.0,
             });
-            visited.insert(current, true);
+            visited.insert(current);
             break;
         }
     }
@@ -176,21 +175,22 @@ fn build_chain_from_endpoint(
     Some(chain)
 }
 
-fn is_middle_of_chain(neighbors: &[(Entity, f32)]) -> bool {
-    neighbors.len() == 2
-}
-
-fn find_next_neighbor(neighbors: &[(Entity, f32)], prev: Entity) -> (Entity, f32) {
-    if neighbors[0].0 == prev {
-        neighbors[1]
-    } else {
-        neighbors[0]
+fn find_next_non_limb_neighbor(
+    neighbors: &[(Entity, f32)],
+    prev: Entity,
+    nodes: &Query<&mut Node>,
+) -> (Entity, f32) {
+    for &(entity, rest_len) in neighbors {
+        if entity != prev && !is_limb_node(entity, nodes) {
+            return (entity, rest_len);
+        }
     }
+    neighbors[0]
 }
 
 fn collect_cycles(
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
-    visited: &mut HashMap<Entity, bool>,
+    visited: &mut HashSet<Entity>,
     chains: &mut Vec<Vec<ChainLink>>,
     nodes: &Query<&mut Node>,
 ) {
@@ -199,7 +199,7 @@ fn collect_cycles(
             continue;
         }
         if is_limb_node(start, nodes) {
-            visited.insert(start, true);
+            visited.insert(start);
             continue;
         }
 
@@ -214,7 +214,7 @@ fn collect_cycles(
 fn build_cycle_chain(
     start: Entity,
     adj: &HashMap<Entity, Vec<(Entity, f32)>>,
-    visited: &mut HashMap<Entity, bool>,
+    visited: &mut HashSet<Entity>,
     nodes: &Query<&mut Node>,
 ) -> Option<Vec<ChainLink>> {
     let mut chain: Vec<ChainLink> = Vec::new();
@@ -223,24 +223,23 @@ fn build_cycle_chain(
 
     loop {
         let neighbors = adj.get(&current)?;
-        let non_limb: Vec<(Entity, f32)> = neighbors
+        let non_limb_count = neighbors
             .iter()
             .filter(|(e, _)| !is_limb_node(*e, nodes))
-            .copied()
-            .collect();
+            .count();
 
-        if non_limb.is_empty() {
-            visited.insert(current, true);
+        if non_limb_count == 0 {
+            visited.insert(current);
             break;
         }
 
-        let (next_node, rest_len) = select_cycle_neighbor(&non_limb, prev, visited);
+        let (next_node, rest_len) = select_cycle_neighbor(neighbors, prev, visited, nodes);
 
         chain.push(ChainLink {
             entity: current,
             rest_length: rest_len,
         });
-        visited.insert(current, true);
+        visited.insert(current);
         prev = current;
         current = next_node;
 
@@ -263,16 +262,17 @@ fn build_cycle_chain(
 fn select_cycle_neighbor(
     neighbors: &[(Entity, f32)],
     prev: Entity,
-    visited: &HashMap<Entity, bool>,
+    visited: &HashSet<Entity>,
+    nodes: &Query<&mut Node>,
 ) -> (Entity, f32) {
     for &(entity, rest_len) in neighbors {
-        if entity != prev && !is_visited(visited, entity) {
+        if entity != prev && !is_limb_node(entity, nodes) && !visited.contains(&entity) {
             return (entity, rest_len);
         }
     }
     // Fallback: any non-prev neighbor
     for &(entity, rest_len) in neighbors {
-        if entity != prev {
+        if entity != prev && !is_limb_node(entity, nodes) {
             return (entity, rest_len);
         }
     }
@@ -281,11 +281,11 @@ fn select_cycle_neighbor(
 
 fn find_standalone_constraints(
     constraints: &[&DistanceConstraint],
-    visited: &HashMap<Entity, bool>,
+    visited: &HashSet<Entity>,
 ) -> Vec<DistanceConstraint> {
     constraints
         .iter()
-        .filter(|c| !is_visited(visited, c.node_a) || !is_visited(visited, c.node_b))
+        .filter(|c| !visited.contains(&c.node_a) || !visited.contains(&c.node_b))
         .map(|c| (*c).clone())
         .collect()
 }

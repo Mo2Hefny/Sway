@@ -22,6 +22,6 @@ pub fn update_constraint_graph(
     }
 
     *has_built = true;
-    let constraint_list: Vec<DistanceConstraint> = all_constraints.iter().cloned().collect();
+    let constraint_list: Vec<&DistanceConstraint> = all_constraints.iter().collect();
     graph.rebuild(&constraint_list);
 }

@@ -19,7 +19,7 @@ impl ConstraintGraph {
         }
     }
 
-    pub fn rebuild(&mut self, constraints: &Vec<DistanceConstraint>) {
+    pub fn rebuild(&mut self, constraints: &[&DistanceConstraint]) {
         self.adjacency.clear();
         self.node_groups.clear();
         self.group_min_nodes.clear();
@@ -27,11 +27,11 @@ impl ConstraintGraph {
         for constraint in constraints {
             self.adjacency
                 .entry(constraint.node_a)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push((constraint.node_b, constraint.rest_length));
             self.adjacency
                 .entry(constraint.node_b)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push((constraint.node_a, constraint.rest_length));
         }
 
