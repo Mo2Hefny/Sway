@@ -24,14 +24,13 @@ pub fn anchor_movement_system(
     let total_time = time.elapsed_secs();
     let mouse_world = get_mouse_world_position(&window_query, &camera_query);
 
-    let all_nodes: Vec<(Entity, Vec2, f32)> = anchors.iter().map(|(e, n)| (e, n.position, n.radius)).collect();
-    
-    let mut child_positions: HashMap<Entity, Vec2> = HashMap::new();
+    let mut all_nodes_cache: Option<Vec<(Entity, Vec2, f32)>> = None;
+    let mut node_positions: HashMap<Entity, Vec2> = HashMap::new();
+
     for (entity, node) in anchors.iter() {
-        if let Some(neighbors) = graph.adjacency.get(&entity) {
-            if let Some(&(child_entity, _)) = neighbors.first() {
-                child_positions.insert(entity, node.position);
-            }
+        node_positions.insert(entity, node.position);
+        if node.node_type == NodeType::Anchor && node.movement_mode == AnchorMovementMode::Procedural && all_nodes_cache.is_none() {
+            all_nodes_cache = Some(anchors.iter().map(|(e, n)| (e, n.position, n.radius)).collect());
         }
     }
 
@@ -47,13 +46,15 @@ pub fn anchor_movement_system(
             AnchorMovementMode::FollowTarget => {
                 if let Some(target) = mouse_world {
                     node.target_position = target;
-                    move_toward_target(entity, &mut node, &graph, &child_positions);
+                    move_toward_target(entity, &mut node, &graph, &node_positions);
                 }
             }
             AnchorMovementMode::Procedural => {
                 let dt = time.delta_secs();
-                update_procedural_target(entity, &mut node, total_time, dt, &playground, &graph, &all_nodes);
-                move_toward_target(entity, &mut node, &graph, &child_positions);
+                if let Some(ref all_nodes) = all_nodes_cache {
+                    update_procedural_target(entity, &mut node, total_time, dt, &playground, &graph, all_nodes);
+                }
+                move_toward_target(entity, &mut node, &graph, &node_positions);
             }
         }
     }
@@ -67,7 +68,7 @@ fn move_toward_target(
     entity: Entity,
     node: &mut Node,
     graph: &ConstraintGraph,
-    child_positions: &HashMap<Entity, Vec2>,
+    node_positions: &HashMap<Entity, Vec2>,
 ) {
     let direction = node.target_position - node.position;
     let distance = direction.length();
@@ -80,7 +81,7 @@ fn move_toward_target(
     
     if let Some(neighbors) = graph.adjacency.get(&entity) {
         if let Some(&(child_entity, _)) = neighbors.first() {
-            if let Some(&child_pos) = child_positions.get(&child_entity) {
+            if let Some(&child_pos) = node_positions.get(&child_entity) {
                 let current_chain_angle = (child_pos - node.position).to_angle();
                 let angle_diff = normalize_angle(desired_angle - current_chain_angle);
                 let clamped_diff = angle_diff.clamp(node.angle_min, node.angle_max);

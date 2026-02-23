@@ -5,6 +5,8 @@ use crate::core::constants::{CELL_SIZE, MIN_COLLISION_DISTANCE};
 use crate::core::resources::ConstraintGraph;
 use crate::ui::state::PlaybackState;
 
+use std::collections::HashSet;
+
 #[derive(Debug, Clone, Copy)]
 struct Collider {
     entity: Entity,
@@ -28,12 +30,11 @@ pub fn collision_avoidance_system(
 
     grid_entries.sort_unstable();
 
-    let mut potential_pairs = find_potential_pairs(&grid_entries);
+    let potential_pairs = find_potential_pairs(&grid_entries);
 
-    potential_pairs.sort_unstable();
-    potential_pairs.dedup();
+    let pairs_vec: Vec<(usize, usize)> = potential_pairs.into_iter().collect();
 
-    resolve_collisions(&mut colliders, &potential_pairs);
+    resolve_collisions(&mut colliders, &pairs_vec);
     apply_updates(&mut nodes, &colliders);
 }
 
@@ -89,8 +90,8 @@ fn generate_grid_entries(colliders: &[Collider]) -> Vec<CellEntry> {
     grid_entries
 }
 
-fn find_potential_pairs(grid_entries: &[CellEntry]) -> Vec<(usize, usize)> {
-    let mut potential_pairs = Vec::with_capacity(grid_entries.len());
+fn find_potential_pairs(grid_entries: &[CellEntry]) -> HashSet<(usize, usize)> {
+    let mut potential_pairs = HashSet::with_capacity(grid_entries.len());
     let mut start_index = 0;
 
     while start_index < grid_entries.len() {
@@ -109,7 +110,7 @@ fn find_potential_pairs(grid_entries: &[CellEntry]) -> Vec<(usize, usize)> {
 
                 let (first, second) = if idx_a < idx_b { (idx_a, idx_b) } else { (idx_b, idx_a) };
 
-                potential_pairs.push((first, second));
+                potential_pairs.insert((first, second));
             }
         }
 
