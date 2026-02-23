@@ -210,21 +210,21 @@ fn would_exceed_connection_limit(
     existing: &Query<&DistanceConstraint>,
     node_query: &Query<(Entity, &Transform, &SimNode), With<Selectable>>,
 ) -> bool {
-    let a_is_normal = node_a.node_type == NodeType::Normal;
-    let b_is_normal = node_b.node_type == NodeType::Normal;
+    let a_is_normal = node_a.node_type != NodeType::Limb;
+    let b_is_normal = node_b.node_type != NodeType::Limb;
 
     if !a_is_normal && !b_is_normal {
         return false;
     }
 
-    if a_is_normal {
+    if a_is_normal && b_is_normal {
         let count = count_non_limb_connections(entity_a, existing, node_query);
         if count >= MAX_NORMAL_NODE_CONNECTIONS {
             return true;
         }
     }
 
-    if b_is_normal {
+    if b_is_normal && a_is_normal {
         let count = count_non_limb_connections(entity_b, existing, node_query);
         if count >= MAX_NORMAL_NODE_CONNECTIONS {
             return true;

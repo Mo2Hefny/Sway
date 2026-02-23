@@ -28,3 +28,20 @@ pub fn pick_node_at(
     }
     None
 }
+
+/// Returns all entities whose circle contains `world_pos`, sorted by `Entity` for stable ordering.
+pub fn pick_all_nodes_at(
+    world_pos: Vec2,
+    padding: f32,
+    node_query: &Query<(Entity, &Transform, &SimNode), With<Selectable>>,
+) -> Vec<Entity> {
+    let mut hits: Vec<Entity> = node_query
+        .iter()
+        .filter(|(_, transform, node)| {
+            world_pos.distance(transform.translation.truncate()) <= node.radius + padding
+        })
+        .map(|(entity, _, _)| entity)
+        .collect();
+    hits.sort();
+    hits
+}

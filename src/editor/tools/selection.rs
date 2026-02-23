@@ -2,7 +2,7 @@
 
 use bevy::prelude::*;
 
-use super::input::{cursor_world_pos, pick_node_at};
+use super::input::{cursor_world_pos, pick_all_nodes_at};
 use crate::core::{DistanceConstraint, Node as SimNode};
 use crate::editor::components::{NodeVisual, Selectable, Selected};
 use crate::editor::constants::*;
@@ -13,6 +13,7 @@ use crate::ui::state::{EditorTool, EditorToolState};
 #[derive(Resource, Clone, Debug, Default, Reflect)]
 pub struct Selection {
     pub entity: Option<Entity>,
+    pub last_clicked_index: usize,
 }
 
 impl Selection {
@@ -51,17 +52,29 @@ pub fn handle_node_selection(
     let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
         return;
     };
-    let clicked_node = pick_node_at(world_pos, 0.0, &node_query);
+    let hits = pick_all_nodes_at(world_pos, 0.0, &node_query);
 
     for prev_selected in selected_query.iter() {
         commands.entity(prev_selected).remove::<Selected>();
     }
 
-    if let Some(entity) = clicked_node {
-        selection.select(entity);
-        commands.entity(entity).insert(Selected);
-    } else {
+    if hits.is_empty() {
         selection.deselect();
+    } else {
+        let next_index = if let Some(current) = selection.entity {
+            if let Some(pos) = hits.iter().position(|e| *e == current) {
+                (pos + 1) % hits.len()
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        let entity = hits[next_index];
+        selection.select(entity);
+        selection.last_clicked_index = next_index;
+        commands.entity(entity).insert(Selected);
     }
 }
 

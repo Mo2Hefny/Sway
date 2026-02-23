@@ -6,6 +6,7 @@ use bevy::ecs::relationship::Relationship;
 use crate::editor::visuals::params::*;
 use crate::editor::mesh::primitives::{create_arc_mesh, create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
 use crate::core::components::LimbSet;
+use crate::editor::tools::selection::Selection;
 use crate::core::{Node, NodeType};
 use crate::editor::components::{
     AngleArc, ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
@@ -89,6 +90,7 @@ pub fn spawn_node_visuals(
 
 pub fn sync_node_visuals(
     mut commands: Commands,
+    selection: Res<Selection>,
     mut iter_params: NodeIterationParams,
     mut sync_params: NodeSyncParams,
 ) {
@@ -109,14 +111,12 @@ pub fn sync_node_visuals(
             if let Ok(mat_handle) = sync_params.material_query.get(child) {
                 if let Some(material) = sync_params.materials.get_mut(mat_handle.0.id()) {
                     if let Ok(_) = sync_params.visual_query.get(child) {
-                        if limb_set.is_some() {
+                        if selection.is_selected(entity) {
+                            material.color = SELECTION_COLOR;
+                        } else if limb_set.is_some() {
                              material.color = Color::srgb(0.6, 0.2, 0.8);
                         } else {
-                            match node.node_type {
-                                NodeType::Anchor => material.color = ANCHOR_NODE_COLOR,
-                                NodeType::Limb => material.color = LEG_NODE_COLOR,
-                                NodeType::Normal => material.color = NORMAL_NODE_COLOR,
-                            }
+                            material.color = get_node_color(node.node_type);
                         }
                     } else if sync_params.eye_children.contains(child) {
                         material.color = if node.is_head {
