@@ -7,8 +7,13 @@ use crate::core::components::{LimbSet, Node};
 use crate::core::resources::ConstraintGraph;
 use crate::editor::components::{LimbMesh, LimbOutline};
 use crate::editor::constants::*;
-use crate::editor::mesh::skin::{build_fill_mesh, build_outline_mesh, evaluate_catmull_rom_closed};
+use crate::editor::mesh::skin::{
+    build_outline_mesh, build_strip_fill_mesh, evaluate_catmull_rom_closed,
+    evaluate_catmull_rom_open,
+};
 use crate::ui::state::DisplaySettings;
+
+use std::f32::consts::{FRAC_PI_2, PI};
 
 
 pub fn spawn_limb_visual(
@@ -59,7 +64,7 @@ pub fn sync_limb_visual(
     let show = display_settings.show_skin;
     let opaque = !display_settings.show_nodes;
 
-    let mut all_fill_polygons: Vec<Vec<Vec2>> = Vec::new();
+    let mut all_fill_meshes: Vec<Mesh> = Vec::new();
     let mut all_outline_polygons: Vec<Vec<Vec2>> = Vec::new();
     let mut body_group_ids: Vec<Option<u32>> = Vec::new();
 
@@ -88,21 +93,23 @@ pub fn sync_limb_visual(
                 }
 
                 if let Some(polygon) = build_limb_polygon(&positions, &radii) {
-                    all_fill_polygons.push(polygon.clone());
                     all_outline_polygons.push(polygon);
-                    body_group_ids.push(group_id);
                 }
+                if let Some(fill) = build_limb_fill(&positions, &radii) {
+                    all_fill_meshes.push(fill);
+                }
+                body_group_ids.push(group_id);
             }
         }
     }
 
-    let combined_fill = build_fill_mesh(&all_fill_polygons);
+    let combined_fill = merge_meshes(&all_fill_meshes);
     let combined_outline = build_outline_mesh(&all_outline_polygons, OUTLINE_THICKNESS);
 
     let first_group = body_group_ids.first().copied().flatten().unwrap_or(0) as usize;
 
     for (mesh_handle, mat_handle, mut vis) in fill_query.iter_mut() {
-        if !show || all_fill_polygons.is_empty() {
+        if !show || all_fill_meshes.is_empty() {
             *vis = Visibility::Hidden;
             if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
                 *mesh = Mesh::new(PrimitiveTopology::TriangleList, default());
@@ -115,11 +122,7 @@ pub fn sync_limb_visual(
             *mesh = combined_fill.clone();
         }
         if let Some(mat) = materials.get_mut(&mat_handle.0) {
-            mat.color = if opaque {
-                SKIN_PALETTE_OPAQUE[first_group % SKIN_PALETTE_OPAQUE.len()]
-            } else {
-                SKIN_PALETTE[first_group % SKIN_PALETTE.len()]
-            };
+            mat.color = skin_color(first_group, opaque);
         }
     }
 
@@ -143,7 +146,8 @@ pub fn sync_limb_visual(
 // Private Methods
 // =============================================================================
 
-fn limb_half_width(i: usize, joint_count: usize, radii: &[f32]) -> f32 {
+/// Effective radius for joint `i`.
+fn joint_radius(i: usize, joint_count: usize, radii: &[f32]) -> f32 {
     let t = i as f32 / (joint_count - 1).max(1) as f32;
     let fallback = LIMB_BASE_WIDTH * (1.0 - t) + LIMB_TIP_WIDTH * t;
     if i < radii.len() {
@@ -153,12 +157,23 @@ fn limb_half_width(i: usize, joint_count: usize, radii: &[f32]) -> f32 {
     }
 }
 
-fn limb_dir(positions: &[Vec2], i: usize) -> Vec2 {
-    let joint_count = positions.len();
-    if i < joint_count - 1 {
-        (positions[i + 1] - positions[i]).normalize_or_zero()
+/// Direction angle at joint `i` (average of incoming and outgoing segments).
+fn joint_angle(positions: &[Vec2], i: usize) -> f32 {
+    let n = positions.len();
+    if n < 2 {
+        return 0.0;
+    }
+    if i == 0 {
+        let d = positions[1] - positions[0];
+        d.y.atan2(d.x)
+    } else if i == n - 1 {
+        let d = positions[n - 1] - positions[n - 2];
+        d.y.atan2(d.x)
     } else {
-        (positions[i] - positions[i - 1]).normalize_or_zero()
+        let d_in = (positions[i] - positions[i - 1]).normalize_or_zero();
+        let d_out = (positions[i + 1] - positions[i]).normalize_or_zero();
+        let avg = (d_in + d_out).normalize_or_zero();
+        avg.y.atan2(avg.x)
     }
 }
 
@@ -167,47 +182,122 @@ fn build_limb_polygon(positions: &[Vec2], radii: &[f32]) -> Option<Vec<Vec2>> {
         return None;
     }
 
-    let joint_count = positions.len();
-    let mut control_points: Vec<Vec2> = Vec::new();
+    let jc = positions.len();
+    let last = jc - 1;
 
-    for i in 0..joint_count {
-        let half_width = limb_half_width(i, joint_count, radii);
-        let dir = limb_dir(positions, i);
-        let perp = Vec2::new(-dir.y, dir.x);
-        control_points.push(positions[i] + perp * half_width);
+    let r: Vec<f32> = (0..jc).map(|i| joint_radius(i, jc, radii)).collect();
+    let angles: Vec<f32> = (0..jc).map(|i| joint_angle(positions, i)).collect();
+
+    let mut ctrl: Vec<Vec2> = Vec::new();
+
+    for i in 0..jc {
+        ctrl.push(positions[i] + Vec2::from_angle(angles[i] + FRAC_PI_2) * r[i]);
     }
 
-    let tip = positions[joint_count - 1];
-    let tip_dir = limb_dir(positions, joint_count - 1);
-    let t_tip = (joint_count - 1) as f32 / (joint_count - 1).max(1) as f32;
-    let tip_w = LIMB_BASE_WIDTH * (1.0 - t_tip) + LIMB_TIP_WIDTH * t_tip;
-
-    control_points.push(tip + tip_dir * tip_w);
-
-    for i in (0..joint_count).rev() {
-        let half_width = limb_half_width(i, joint_count, radii);
-        let dir = limb_dir(positions, i);
-        let perp = Vec2::new(-dir.y, dir.x);
-        control_points.push(positions[i] - perp * half_width);
+    {
+        let a = angles[last];
+        let ri = r[last];
+        for k in 0..=JOINT_ARC_SEGMENTS {
+            let t = k as f32 / JOINT_ARC_SEGMENTS as f32;
+            let angle = a + FRAC_PI_2 - PI * t;
+            ctrl.push(positions[last] + Vec2::from_angle(angle) * ri);
+        }
     }
 
-    let overlap_count = joint_count.min(3);
-    for i in 0..overlap_count {
-        let half_width = limb_half_width(i, joint_count, radii);
-        let dir = limb_dir(positions, i);
-        let perp = Vec2::new(-dir.y, dir.x);
-        control_points.push(positions[i] + perp * half_width);
+    for i in (0..jc).rev() {
+        if i == last { continue; }
+        ctrl.push(positions[i] + Vec2::from_angle(angles[i] - FRAC_PI_2) * r[i]);
     }
 
-    if control_points.len() < 4 {
+    let oc = ctrl.len().min(3);
+    let overlap: Vec<Vec2> = ctrl[..oc].to_vec();
+    ctrl.extend(overlap);
+
+    if ctrl.len() < 4 {
         return None;
     }
 
-    let polygon = evaluate_catmull_rom_closed(&control_points, LIMB_SPLINE_SAMPLES);
+    let polygon = evaluate_catmull_rom_closed(&ctrl, LIMB_SPLINE_SAMPLES);
 
     if polygon.len() < 3 {
         return None;
     }
 
     Some(polygon)
+}
+
+/// Merges multiple meshes into one by concatenating their vertex/index buffers.
+fn merge_meshes(meshes: &[Mesh]) -> Mesh {
+    use bevy::mesh::Indices;
+
+    let mut all_positions: Vec<[f32; 3]> = Vec::new();
+    let mut all_indices: Vec<u32> = Vec::new();
+
+    for mesh in meshes {
+        let base = all_positions.len() as u32;
+
+        if let Some(bevy::mesh::VertexAttributeValues::Float32x3(positions)) =
+            mesh.attribute(Mesh::ATTRIBUTE_POSITION)
+        {
+            all_positions.extend_from_slice(positions);
+        }
+
+        if let Some(Indices::U32(indices)) = mesh.indices() {
+            for &idx in indices {
+                all_indices.push(base + idx);
+            }
+        }
+    }
+
+    if all_positions.is_empty() {
+        return Mesh::new(PrimitiveTopology::TriangleList, default());
+    }
+
+    Mesh::new(PrimitiveTopology::TriangleList, default())
+        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, all_positions)
+        .with_inserted_indices(Indices::U32(all_indices))
+}
+
+/// Builds a limb strip-fill mesh with a tip cap; no root cap (body skin covers it).
+fn build_limb_fill(positions: &[Vec2], radii: &[f32]) -> Option<Mesh> {
+    if positions.len() < 2 {
+        return None;
+    }
+
+    let jc = positions.len();
+    let last = jc - 1;
+
+    let r: Vec<f32> = (0..jc).map(|i| joint_radius(i, jc, radii)).collect();
+    let angles: Vec<f32> = (0..jc).map(|i| joint_angle(positions, i)).collect();
+
+    let left_ctrl: Vec<Vec2> = (0..jc)
+        .map(|i| positions[i] + Vec2::from_angle(angles[i] + FRAC_PI_2) * r[i])
+        .collect();
+    let right_ctrl: Vec<Vec2> = (0..jc)
+        .map(|i| positions[i] + Vec2::from_angle(angles[i] - FRAC_PI_2) * r[i])
+        .collect();
+
+    let left_smooth = evaluate_catmull_rom_open(&left_ctrl, LIMB_SPLINE_SAMPLES);
+    let right_smooth = evaluate_catmull_rom_open(&right_ctrl, LIMB_SPLINE_SAMPLES);
+
+    let last_l = left_smooth.len() - 1;
+    let last_r = right_smooth.len() - 1;
+    let mut tip_cap: Vec<Vec2> = (0..=CAP_SEGMENTS)
+        .map(|k| {
+            let t = k as f32 / CAP_SEGMENTS as f32;
+            let angle = angles[last] + FRAC_PI_2 - PI * t;
+            positions[last] + Vec2::from_angle(angle) * r[last]
+        })
+        .collect();
+    tip_cap[0] = left_smooth[last_l];
+    *tip_cap.last_mut().unwrap() = right_smooth[last_r];
+
+    Some(build_strip_fill_mesh(
+        &left_smooth,
+        &right_smooth,
+        positions[0],
+        &[],
+        positions[last],
+        &tip_cap,
+    ))
 }

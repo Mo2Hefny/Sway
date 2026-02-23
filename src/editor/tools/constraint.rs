@@ -15,7 +15,7 @@ pub struct EdgeCreationState {
     pub first_node: Option<Entity>,
 }
 
-// Handles left-clicks to create distance constraints between nodes.
+/// Handles left-clicks to create distance constraints between nodes.
 pub fn handle_add_edge_tool(
     mut commands: Commands,
     tool_state: Res<EditorToolState>,
@@ -104,28 +104,23 @@ pub fn render_constraint_preview(
     cameras: Query<(&Camera, &GlobalTransform)>,
     node_query: Query<(Entity, &Transform, &SimNode), With<Selectable>>,
     sim_node_query: Query<&SimNode>,
-    preview_query: Query<Entity, With<ConstraintPreview>>,
+    mut preview_query: Query<(Entity, &mut Mesh2d, &mut MeshMaterial2d<ColorMaterial>), With<ConstraintPreview>>,
     existing: Query<&DistanceConstraint>,
 ) {
-    for entity in preview_query.iter() {
-        commands.entity(entity).despawn();
-    }
-
-    if tool_state.active != EditorTool::AddEdge {
+    if tool_state.active != EditorTool::AddEdge || edge_state.first_node.is_none() {
+        for (entity, _, _) in preview_query.iter() {
+            commands.entity(entity).despawn();
+        }
         return;
     }
 
-    let Some(first) = edge_state.first_node else { return };
+    let first = edge_state.first_node.unwrap();
     let Ok(node_a) = sim_node_query.get(first) else { return };
-    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else {
-        return;
-    };
+    let Some(world_pos) = cursor_world_pos(&windows, &cameras) else { return };
 
     let dir = world_pos - node_a.position;
     let dist = dir.length();
-    if dist < 1e-3 {
-        return;
-    }
+    if dist < 1e-3 { return; }
     let norm = dir / dist;
     let start = node_a.position + norm * node_a.radius;
 
@@ -152,13 +147,18 @@ pub fn render_constraint_preview(
         CONSTRAINT_GAP_LENGTH,
     );
 
-    commands.spawn((
-        Name::new("Constraint Preview"),
-        ConstraintPreview,
-        Mesh2d(meshes.add(mesh)),
-        MeshMaterial2d(materials.add(ColorMaterial::from_color(preview_color))),
-        Transform::from_translation(Vec3::Z * 1.0),
-    ));
+    if let Ok((_entity, mut mesh_handle, mut material_handle)) = preview_query.single_mut() {
+        mesh_handle.0 = meshes.add(mesh);
+        material_handle.0 = materials.add(ColorMaterial::from_color(preview_color));
+    } else {
+        commands.spawn((
+            Name::new("Constraint Preview"),
+            ConstraintPreview,
+            Mesh2d(meshes.add(mesh)),
+            MeshMaterial2d(materials.add(ColorMaterial::from_color(preview_color))),
+            Transform::from_translation(Vec3::Z * 1.0),
+        ));
+    }
 }
 
 // =============================================================================
@@ -218,15 +218,10 @@ fn would_exceed_connection_limit(
     }
 
     if a_is_normal && b_is_normal {
-        let count = count_non_limb_connections(entity_a, existing, node_query);
-        if count >= MAX_NORMAL_NODE_CONNECTIONS {
+        if count_non_limb_connections(entity_a, existing, node_query) >= MAX_NORMAL_NODE_CONNECTIONS {
             return true;
         }
-    }
-
-    if b_is_normal && a_is_normal {
-        let count = count_non_limb_connections(entity_b, existing, node_query);
-        if count >= MAX_NORMAL_NODE_CONNECTIONS {
+        if count_non_limb_connections(entity_b, existing, node_query) >= MAX_NORMAL_NODE_CONNECTIONS {
             return true;
         }
     }

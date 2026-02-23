@@ -38,6 +38,14 @@ pub struct DirectionVector;
 #[derive(Component, Debug)]
 pub struct AngleArc;
 
+/// Caches the last rendered radius and arc bounds to avoid redundant mesh rebuilds.
+#[derive(Component, Default, Clone, Debug)]
+pub struct NodeVisualCache {
+    pub radius: f32,
+    pub arc_start: f32,
+    pub arc_end: f32,
+}
+
 /// Links a target marker or direction vector to a specific limb in a LimbSet.
 #[derive(Component, Debug)]
 pub struct LimbIndex(pub usize);

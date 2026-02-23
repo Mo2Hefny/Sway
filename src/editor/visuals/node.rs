@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 use bevy::ecs::relationship::Relationship;
+use std::f32::consts::FRAC_PI_2;
 
 use crate::editor::visuals::params::*;
 use crate::editor::mesh::primitives::{create_arc_mesh, create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
@@ -9,7 +10,7 @@ use crate::core::components::LimbSet;
 use crate::editor::tools::selection::Selection;
 use crate::core::{Node, NodeType};
 use crate::editor::components::{
-    AngleArc, ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualOf, Selectable, TargetMarker,
+    AngleArc, ContactPoint, DirectionVector, EyeVisual, LookVector, NodeVisual, NodeVisualCache, NodeVisualOf, Selectable, TargetMarker,
 };
 use crate::editor::constants::*;
 use crate::ui::state::DisplaySettings;
@@ -37,8 +38,8 @@ pub fn spawn_node_visuals(
         let look_material = materials.add(ColorMaterial::from_color(LOOK_VECTOR_COLOR));
 
         let look_angle = node.chain_angle;
-        let right_offset = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * node.radius;
-        let left_offset = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * node.radius;
+        let right_offset = Vec2::from_angle(look_angle + FRAC_PI_2) * node.radius;
+        let left_offset = Vec2::from_angle(look_angle - FRAC_PI_2) * node.radius;
 
         commands.entity(entity).with_children(|parent| {
             parent.spawn((
@@ -54,8 +55,8 @@ pub fn spawn_node_visuals(
             spawn_look_vector(parent, look_mesh, look_material, look_angle);
 
             let eye_dist = node.radius * EYE_DISTANCE_RATIO;
-            let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
-            let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+            let r_eye = Vec2::from_angle(look_angle + FRAC_PI_2) * eye_dist;
+            let l_eye = Vec2::from_angle(look_angle - FRAC_PI_2) * eye_dist;
 
             let alpha = if node.is_head { 1.0 } else { 0.0 };
             let eye_mesh = meshes.add(create_filled_circle_mesh(EYE_RADIUS, CONTACT_SEGMENTS));
@@ -67,10 +68,7 @@ pub fn spawn_node_visuals(
             let target_mat = materials.add(ColorMaterial::from_color(TARGET_MARKER_COLOR.with_alpha(alpha)));
             spawn_target_position_marker(parent, target_mesh, target_mat);
 
-            let dir_mesh = meshes.add(create_local_line_mesh(
-                DIRECTION_VECTOR_LENGTH,
-                DIRECTION_VECTOR_THICKNESS,
-            ));
+            let dir_mesh = meshes.add(create_local_line_mesh(DIRECTION_VECTOR_LENGTH, DIRECTION_VECTOR_THICKNESS));
             let dir_mat = materials.add(ColorMaterial::from_color(DIRECTION_VECTOR_COLOR.with_alpha(alpha)));
             spawn_direction_vector(parent, dir_mesh, dir_mat);
 
@@ -84,7 +82,7 @@ pub fn spawn_node_visuals(
 
         commands
             .entity(entity)
-            .insert((Transform::from_translation(node.position.extend(0.0)), Selectable));
+            .insert((Transform::from_translation(node.position.extend(0.0)), Selectable, NodeVisualCache::default()));
     }
 }
 
@@ -94,18 +92,23 @@ pub fn sync_node_visuals(
     mut iter_params: NodeIterationParams,
     mut sync_params: NodeSyncParams,
 ) {
-    for (entity, node, mut transform, children, limb_set) in iter_params.query.iter_mut() {
+    for (entity, node, mut transform, children, limb_set, mut cache) in iter_params.query.iter_mut() {
         transform.translation.x = node.position.x;
         transform.translation.y = node.position.y;
 
         let is_anchor = node.node_type == NodeType::Anchor;
         let show_target = is_anchor || limb_set.is_some();
         let look_angle = node.chain_angle;
-        let right_offset = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * node.radius;
-        let left_offset = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * node.radius;
+        let right_offset = Vec2::from_angle(look_angle + FRAC_PI_2) * node.radius;
+        let left_offset = Vec2::from_angle(look_angle - FRAC_PI_2) * node.radius;
 
+        if (node.radius - cache.radius).abs() > 1e-4 {
+            cache.radius = node.radius;
+            for child in children.iter() {
+                sync_circle_mesh(child, node.radius, &mut sync_params);
+            }
+        }
         for child in children.iter() {
-            sync_circle_mesh(child, node.radius, &mut sync_params);
             sync_look_rotation(child, look_angle, &mut sync_params);
 
             if let Ok(mat_handle) = sync_params.material_query.get(child) {
@@ -114,28 +117,16 @@ pub fn sync_node_visuals(
                         if selection.is_selected(entity) {
                             material.color = SELECTION_COLOR;
                         } else if limb_set.is_some() {
-                             material.color = Color::srgb(0.6, 0.2, 0.8);
+                            material.color = Color::srgb(0.6, 0.2, 0.8);
                         } else {
                             material.color = get_node_color(node.node_type);
                         }
                     } else if sync_params.eye_children.contains(child) {
-                        material.color = if node.is_head {
-                            EYE_COLOR
-                        } else {
-                            EYE_COLOR.with_alpha(0.0)
-                        };
+                        material.color = if node.is_head { EYE_COLOR } else { EYE_COLOR.with_alpha(0.0) };
                     } else if sync_params.target_children.contains(child) {
-                        material.color = if show_target {
-                             TARGET_MARKER_COLOR
-                        } else {
-                            TARGET_MARKER_COLOR.with_alpha(0.0)
-                        };
+                        material.color = if show_target { TARGET_MARKER_COLOR } else { TARGET_MARKER_COLOR.with_alpha(0.0) };
                     } else if sync_params.dir_children.contains(child) {
-                        material.color = if is_anchor {
-                            DIRECTION_VECTOR_COLOR
-                        } else {
-                            DIRECTION_VECTOR_COLOR.with_alpha(0.0)
-                        };
+                        material.color = if is_anchor { DIRECTION_VECTOR_COLOR } else { DIRECTION_VECTOR_COLOR.with_alpha(0.0) };
                     }
                 }
             }
@@ -144,21 +135,25 @@ pub fn sync_node_visuals(
         let offsets = [right_offset, left_offset];
         sync_contact_positions(children, &offsets, &mut sync_params);
 
-        let arc_radius = node.radius * 0.85;
         let arc_start = node.chain_angle + node.angle_min;
         let arc_end = node.chain_angle + node.angle_max;
-        for child in children.iter() {
-            if sync_params.arc_children.contains(child) {
-                if let Ok(mut mesh_handle) = sync_params.arc_query.get_mut(child) {
-                    mesh_handle.0 = sync_params.meshes.add(create_arc_mesh(arc_radius, arc_start, arc_end, ANGLE_ARC_SEGMENTS));
+        if (arc_start - cache.arc_start).abs() > 1e-4 || (arc_end - cache.arc_end).abs() > 1e-4 {
+            cache.arc_start = arc_start;
+            cache.arc_end = arc_end;
+            let arc_radius = node.radius * 0.85;
+            for child in children.iter() {
+                if sync_params.arc_children.contains(child) {
+                    if let Ok(mut mesh_handle) = sync_params.arc_query.get_mut(child) {
+                        mesh_handle.0 = sync_params.meshes.add(create_arc_mesh(arc_radius, arc_start, arc_end, ANGLE_ARC_SEGMENTS));
+                    }
                 }
             }
         }
-        
+
         if node.is_head {
             let eye_dist = node.radius * EYE_DISTANCE_RATIO;
-            let r_eye = Vec2::from_angle(look_angle + std::f32::consts::FRAC_PI_2) * eye_dist;
-            let l_eye = Vec2::from_angle(look_angle - std::f32::consts::FRAC_PI_2) * eye_dist;
+            let r_eye = Vec2::from_angle(look_angle + FRAC_PI_2) * eye_dist;
+            let l_eye = Vec2::from_angle(look_angle - FRAC_PI_2) * eye_dist;
             let eye_offsets = [r_eye, l_eye];
             sync_eye_positions(children, &eye_offsets, &mut sync_params);
         }

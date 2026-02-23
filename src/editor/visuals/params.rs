@@ -10,7 +10,7 @@ use crate::ui::state::DisplaySettings;
 
 #[derive(SystemParam)]
 pub struct NodeIterationParams<'w, 's> {
-    pub query: Query<'w, 's, (Entity, &'static Node, &'static mut Transform, &'static Children, Option<&'static LimbSet>), (Changed<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>, Without<DirectionVector>, Without<AngleArc>)>,
+    pub query: Query<'w, 's, (Entity, &'static Node, &'static mut Transform, &'static Children, Option<&'static LimbSet>, &'static mut NodeVisualCache), (Changed<Node>, Without<ContactPoint>, Without<LookVector>, Without<EyeVisual>, Without<TargetMarker>, Without<DirectionVector>, Without<AngleArc>)>,
 }
 
 #[derive(SystemParam)]

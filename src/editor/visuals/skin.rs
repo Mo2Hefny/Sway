@@ -8,7 +8,9 @@ use crate::core::resources::ConstraintGraph;
 use crate::editor::components::{SkinGroupIndex, SkinMesh, SkinOutline};
 use crate::editor::constants::*;
 use crate::editor::resources::SkinChains;
-use crate::editor::mesh::skin::{build_fill_mesh, build_outline_mesh, evaluate_catmull_rom_closed};
+use crate::editor::mesh::skin::{
+    build_outline_mesh, build_strip_fill_mesh, evaluate_catmull_rom_closed, evaluate_catmull_rom_open,
+};
 use crate::ui::state::DisplaySettings;
 
 use std::collections::HashMap;
@@ -82,10 +84,15 @@ pub fn sync_skin_visual(
 
     let chain_count = chains.len();
 
-    let polygons: Vec<Vec<Vec2>> = chains
-        .iter()
-        .filter_map(|chain| build_body_polygon(chain, &nodes))
-        .collect();
+    let mut polygons: Vec<Vec<Vec2>> = Vec::with_capacity(chain_count);
+    let mut fill_meshes: Vec<Mesh> = Vec::with_capacity(chain_count);
+
+    for chain in chains.iter() {
+        if let Some((polygon, fill)) = build_body_skin(chain, &nodes) {
+            polygons.push(polygon);
+            fill_meshes.push(fill);
+        }
+    }
 
     let existing_fill_count = fill_query.iter().count();
     let existing_outline_count = outline_query.iter().count();
@@ -138,15 +145,13 @@ pub fn sync_skin_visual(
         *vis = Visibility::Inherited;
 
         if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
-            *mesh = build_fill_mesh(&[polygons[idx].clone()]);
+            if idx < fill_meshes.len() {
+                *mesh = fill_meshes[idx].clone();
+            }
         }
 
         if let Some(mat) = materials.get_mut(&mat_handle.0) {
-            mat.color = if opaque {
-                SKIN_PALETTE_OPAQUE[idx % SKIN_PALETTE_OPAQUE.len()]
-            } else {
-                SKIN_PALETTE[idx % SKIN_PALETTE.len()]
-            };
+            mat.color = skin_color(idx, opaque);
         }
     }
 
@@ -288,8 +293,12 @@ fn get_offset_pos(node: &Node, angle_offset: f32, length_offset: f32) -> Vec2 {
     node.position + Vec2::from_angle(node.chain_angle + PI + angle_offset) * (node.radius + length_offset)
 }
 
-fn build_body_polygon(chain: &[(Entity, f32)], nodes: &Query<&Node>) -> Option<Vec<Vec2>> {
-    let chain_nodes: Vec<&Node> = chain.iter().filter_map(|&(entity, _)| nodes.get(entity).ok()).collect();
+/// Builds both the outline polygon and the strip fill mesh in one pass.
+fn build_body_skin(chain: &[(Entity, f32)], nodes: &Query<&Node>) -> Option<(Vec<Vec2>, Mesh)> {
+    let chain_nodes: Vec<&Node> = chain
+        .iter()
+        .filter_map(|&(entity, _)| nodes.get(entity).ok())
+        .collect();
 
     if chain_nodes.len() < 2 {
         return None;
@@ -298,36 +307,75 @@ fn build_body_polygon(chain: &[(Entity, f32)], nodes: &Query<&Node>) -> Option<V
     let node_count = chain_nodes.len();
     let last = node_count - 1;
 
-    let mut control_points: Vec<Vec2> = Vec::new();
+    let left_ctrl: Vec<Vec2> = (0..node_count)
+        .map(|i| get_offset_pos(chain_nodes[i], FRAC_PI_2, 0.0))
+        .collect();
+    let right_ctrl: Vec<Vec2> = (0..node_count)
+        .map(|i| get_offset_pos(chain_nodes[i], -FRAC_PI_2, 0.0))
+        .collect();
+
+    let overlap_count = node_count.min(3);
+    let ctrl_count = node_count + 1 + node_count + 3 + overlap_count;
+    let mut control_points: Vec<Vec2> = Vec::with_capacity(ctrl_count);
 
     for i in 0..node_count {
-        control_points.push(get_offset_pos(chain_nodes[i], FRAC_PI_2, 0.0));
+        control_points.push(left_ctrl[i]);
     }
-
     control_points.push(get_offset_pos(chain_nodes[last], PI, 0.0));
-
     for i in (0..node_count).rev() {
-        control_points.push(get_offset_pos(chain_nodes[i], -FRAC_PI_2, 0.0));
+        control_points.push(right_ctrl[i]);
     }
-
     control_points.push(get_offset_pos(chain_nodes[0], -FRAC_PI_6, 0.0));
     control_points.push(get_offset_pos(chain_nodes[0], 0.0, 0.0));
     control_points.push(get_offset_pos(chain_nodes[0], FRAC_PI_6, 0.0));
-
-    let overlap_count = node_count.min(3);
     for i in 0..overlap_count {
-        control_points.push(get_offset_pos(chain_nodes[i], FRAC_PI_2, 0.0));
-    }
-
-    if control_points.len() < 4 {
-        return None;
+        control_points.push(left_ctrl[i]);
     }
 
     let polygon = evaluate_catmull_rom_closed(&control_points, SPLINE_SAMPLES);
-
     if polygon.len() < 3 {
         return None;
     }
 
-    Some(polygon)
+    let left_smooth = evaluate_catmull_rom_open(&left_ctrl, SPLINE_SAMPLES);
+    let right_smooth = evaluate_catmull_rom_open(&right_ctrl, SPLINE_SAMPLES);
+
+    // Head cap arc
+    let head = chain_nodes[0];
+    let head_base = head.chain_angle + PI;
+    let mut head_cap: Vec<Vec2> = (0..=CAP_SEGMENTS)
+        .map(|k| {
+            let t = k as f32 / CAP_SEGMENTS as f32;
+            let angle = head_base - FRAC_PI_2 + PI * t;
+            head.position + Vec2::from_angle(angle) * head.radius
+        })
+        .collect();
+    head_cap[0] = right_smooth[0];
+    *head_cap.last_mut().unwrap() = left_smooth[0];
+
+    // Tail cap arc
+    let tail = chain_nodes[last];
+    let tail_base = tail.chain_angle + PI;
+    let last_l = left_smooth.len() - 1;
+    let last_r = right_smooth.len() - 1;
+    let mut tail_cap: Vec<Vec2> = (0..=CAP_SEGMENTS)
+        .map(|k| {
+            let t = k as f32 / CAP_SEGMENTS as f32;
+            let angle = tail_base + FRAC_PI_2 + PI * t;
+            tail.position + Vec2::from_angle(angle) * tail.radius
+        })
+        .collect();
+    tail_cap[0] = left_smooth[last_l];
+    *tail_cap.last_mut().unwrap() = right_smooth[last_r];
+
+    let fill = build_strip_fill_mesh(
+        &left_smooth,
+        &right_smooth,
+        head.position,
+        &head_cap,
+        tail.position,
+        &tail_cap,
+    );
+
+    Some((polygon, fill))
 }

@@ -17,7 +17,7 @@ pub fn sync_playground_to_window(mut playground: ResMut<Playground>, windows: Qu
     }
 }
 
-/// Spawns three visual layers: outside fill, border stroke, inside fill.
+/// Spawns the visual layers for the playground.
 pub fn spawn_playground_visual(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
