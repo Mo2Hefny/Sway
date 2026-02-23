@@ -60,6 +60,7 @@ pub fn sync_skin_visual(
     display_settings: Res<DisplaySettings>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    graph: Res<ConstraintGraph>,
     skin_chains: Res<SkinChains>,
     nodes: Query<&Node>,
     mut fill_query: Query<
@@ -86,11 +87,15 @@ pub fn sync_skin_visual(
 
     let mut polygons: Vec<Vec<Vec2>> = Vec::with_capacity(chain_count);
     let mut fill_meshes: Vec<Mesh> = Vec::with_capacity(chain_count);
+    let mut chain_group_ids: Vec<u32> = Vec::with_capacity(chain_count);
 
     for chain in chains.iter() {
         if let Some((polygon, fill)) = build_body_skin(chain, &nodes) {
             polygons.push(polygon);
             fill_meshes.push(fill);
+            
+            let first_node = chain[0].0;
+            chain_group_ids.push(graph.get_group(first_node).unwrap_or(0));
         }
     }
 
@@ -100,13 +105,12 @@ pub fn sync_skin_visual(
     if chain_count > existing_fill_count {
         let empty = Mesh::new(PrimitiveTopology::TriangleList, default());
         for i in existing_fill_count..chain_count {
-            let color = SKIN_PALETTE[i % SKIN_PALETTE.len()];
             commands.spawn((
                 Name::new("Skin Mesh"),
                 SkinMesh,
                 SkinGroupIndex(i),
                 Mesh2d(meshes.add(empty.clone())),
-                MeshMaterial2d(materials.add(ColorMaterial::from_color(color))),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(SKIN_PALETTE[i % SKIN_PALETTE.len()]))),
                 Transform::from_translation(Vec3::Z * -0.5),
             ));
         }
@@ -151,7 +155,9 @@ pub fn sync_skin_visual(
         }
 
         if let Some(mat) = materials.get_mut(&mat_handle.0) {
-            mat.color = skin_color(idx, opaque);
+            let group_id = chain_group_ids.get(idx).copied().unwrap_or(0);
+            let color_idx = graph.get_group_min(group_id).map(|e| e.index().index() as usize).unwrap_or(group_id as usize);
+            mat.color = skin_color(color_idx, opaque);
         }
     }
 

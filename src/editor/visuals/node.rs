@@ -6,7 +6,6 @@ use std::f32::consts::FRAC_PI_2;
 
 use crate::editor::visuals::params::*;
 use crate::editor::mesh::primitives::{create_arc_mesh, create_filled_circle_mesh, create_hollow_circle_mesh, create_local_line_mesh, create_x_marker_mesh};
-use crate::core::components::LimbSet;
 use crate::editor::tools::selection::Selection;
 use crate::core::{Node, NodeType};
 use crate::editor::components::{

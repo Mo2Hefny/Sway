@@ -5,7 +5,7 @@ use bevy::render::render_resource::PrimitiveTopology;
 
 use crate::core::components::{LimbSet, Node};
 use crate::core::resources::ConstraintGraph;
-use crate::editor::components::{LimbMesh, LimbOutline};
+use crate::editor::components::{LimbMesh, LimbOutline, SkinGroupIndex};
 use crate::editor::constants::*;
 use crate::editor::mesh::skin::{
     build_outline_mesh, build_strip_fill_mesh, evaluate_catmull_rom_closed,
@@ -14,6 +14,7 @@ use crate::editor::mesh::skin::{
 use crate::ui::state::DisplaySettings;
 
 use std::f32::consts::{FRAC_PI_2, PI};
+use std::collections::HashMap;
 
 
 pub fn spawn_limb_visual(
@@ -31,6 +32,7 @@ pub fn spawn_limb_visual(
     commands.spawn((
         Name::new("Limb Mesh"),
         LimbMesh,
+        SkinGroupIndex(0),
         Mesh2d(meshes.add(empty.clone())),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(SKIN_PALETTE[0]))),
         Transform::from_translation(Vec3::Z * -0.6),
@@ -39,6 +41,7 @@ pub fn spawn_limb_visual(
     commands.spawn((
         Name::new("Limb Outline"),
         LimbOutline,
+        SkinGroupIndex(0),
         Mesh2d(meshes.add(empty)),
         MeshMaterial2d(materials.add(ColorMaterial::from_color(OUTLINE_COLOR))),
         Transform::from_translation(Vec3::Z * -0.55),
@@ -46,6 +49,7 @@ pub fn spawn_limb_visual(
 }
 
 pub fn sync_limb_visual(
+    mut commands: Commands,
     display_settings: Res<DisplaySettings>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -53,20 +57,19 @@ pub fn sync_limb_visual(
     limb_sets: Query<(Entity, &LimbSet)>,
     nodes: Query<&Node>,
     mut fill_query: Query<
-        (&Mesh2d, &MeshMaterial2d<ColorMaterial>, &mut Visibility),
+        (Entity, &Mesh2d, &MeshMaterial2d<ColorMaterial>, &SkinGroupIndex, &mut Visibility),
         (With<LimbMesh>, Without<LimbOutline>),
     >,
     mut outline_query: Query<
-        (&Mesh2d, &mut Visibility),
+        (Entity, &Mesh2d, &SkinGroupIndex, &mut Visibility),
         (With<LimbOutline>, Without<LimbMesh>),
     >,
 ) {
     let show = display_settings.show_skin;
     let opaque = !display_settings.show_nodes;
 
-    let mut all_fill_meshes: Vec<Mesh> = Vec::new();
-    let mut all_outline_polygons: Vec<Vec<Vec2>> = Vec::new();
-    let mut body_group_ids: Vec<Option<u32>> = Vec::new();
+    let mut group_fills: HashMap<u32, Vec<Mesh>> = HashMap::new();
+    let mut group_polygons: HashMap<u32, Vec<Vec<Vec2>>> = HashMap::new();
 
     if show {
         for (body_entity, limb_set) in limb_sets.iter() {
@@ -76,7 +79,7 @@ pub fn sync_limb_visual(
             };
             let body_pos = body_node.position;
             let body_radius = body_node.radius;
-            let group_id = graph.get_group(body_entity);
+            let group_id = graph.get_group(body_entity).unwrap_or(0);
 
             for limb in &limb_set.limbs {
                 let mut positions: Vec<Vec2> = vec![body_pos];
@@ -93,53 +96,102 @@ pub fn sync_limb_visual(
                 }
 
                 if let Some(polygon) = build_limb_polygon(&positions, &radii) {
-                    all_outline_polygons.push(polygon);
+                    group_polygons.entry(group_id).or_default().push(polygon);
                 }
                 if let Some(fill) = build_limb_fill(&positions, &radii) {
-                    all_fill_meshes.push(fill);
+                    group_fills.entry(group_id).or_default().push(fill);
                 }
-                body_group_ids.push(group_id);
             }
         }
     }
 
-    let combined_fill = merge_meshes(&all_fill_meshes);
-    let combined_outline = build_outline_mesh(&all_outline_polygons, OUTLINE_THICKNESS);
+    let mut active_groups: Vec<u32> = group_fills.keys().cloned().collect();
+    active_groups.sort();
+    let max_group_idx = active_groups.last().copied().map(|g| g as usize + 1).unwrap_or(0);
 
-    let first_group = body_group_ids.first().copied().flatten().unwrap_or(0) as usize;
+    let existing_fill_count = fill_query.iter().count();
+    let existing_outline_count = outline_query.iter().count();
 
-    for (mesh_handle, mat_handle, mut vis) in fill_query.iter_mut() {
-        if !show || all_fill_meshes.is_empty() {
-            *vis = Visibility::Hidden;
-            if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
-                *mesh = Mesh::new(PrimitiveTopology::TriangleList, default());
+    if max_group_idx > existing_fill_count {
+        let empty = Mesh::new(PrimitiveTopology::TriangleList, default());
+        for i in existing_fill_count..max_group_idx {
+            commands.spawn((
+                Name::new("Limb Mesh"),
+                LimbMesh,
+                SkinGroupIndex(i),
+                Mesh2d(meshes.add(empty.clone())),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(SKIN_PALETTE[i % SKIN_PALETTE.len()]))),
+                Transform::from_translation(Vec3::Z * -0.6),
+            ));
+        }
+    }
+
+    if max_group_idx > existing_outline_count {
+        let empty = Mesh::new(PrimitiveTopology::TriangleList, default());
+        for i in existing_outline_count..max_group_idx {
+            commands.spawn((
+                Name::new("Limb Outline"),
+                LimbOutline,
+                SkinGroupIndex(i),
+                Mesh2d(meshes.add(empty.clone())),
+                MeshMaterial2d(materials.add(ColorMaterial::from_color(OUTLINE_COLOR))),
+                Transform::from_translation(Vec3::Z * -0.55),
+            ));
+        }
+    }
+
+    let mut fill_entities_to_despawn = Vec::new();
+    for (entity, mesh_handle, mat_handle, group, mut vis) in fill_query.iter_mut() {
+        let idx = group.0 as u32;
+        if !show || !group_fills.contains_key(&idx) {
+            if group.0 >= max_group_idx {
+                fill_entities_to_despawn.push(entity);
+            } else {
+                *vis = Visibility::Hidden;
+                if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
+                    *mesh = Mesh::new(PrimitiveTopology::TriangleList, default());
+                }
             }
             continue;
         }
 
         *vis = Visibility::Inherited;
         if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
-            *mesh = combined_fill.clone();
+            if let Some(fills) = group_fills.get(&idx) {
+                *mesh = merge_meshes(fills);
+            }
         }
         if let Some(mat) = materials.get_mut(&mat_handle.0) {
-            mat.color = skin_color(first_group, opaque);
+            let color_idx = graph.get_group_min(idx).map(|e| e.index().index() as usize).unwrap_or(idx as usize);
+            mat.color = skin_color(color_idx, opaque);
         }
     }
 
-    for (mesh_handle, mut vis) in outline_query.iter_mut() {
-        if !show || all_outline_polygons.is_empty() {
-            *vis = Visibility::Hidden;
-            if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
-                *mesh = Mesh::new(PrimitiveTopology::TriangleList, default());
+    let mut outline_entities_to_despawn = Vec::new();
+    for (entity, mesh_handle, group, mut vis) in outline_query.iter_mut() {
+        let idx = group.0 as u32;
+        if !show || !group_polygons.contains_key(&idx) {
+            if group.0 >= max_group_idx {
+                outline_entities_to_despawn.push(entity);
+            } else {
+                *vis = Visibility::Hidden;
+                if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
+                    *mesh = Mesh::new(PrimitiveTopology::TriangleList, default());
+                }
             }
             continue;
         }
 
         *vis = Visibility::Inherited;
         if let Some(mesh) = meshes.get_mut(&mesh_handle.0) {
-            *mesh = combined_outline.clone();
+            if let Some(polygons) = group_polygons.get(&idx) {
+                *mesh = build_outline_mesh(polygons, OUTLINE_THICKNESS);
+            }
         }
     }
+
+    for entity in fill_entities_to_despawn { commands.entity(entity).despawn(); }
+    for entity in outline_entities_to_despawn { commands.entity(entity).despawn(); }
 }
 
 // =============================================================================
