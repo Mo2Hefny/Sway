@@ -5,6 +5,8 @@ use std::fs;
 use std::path::Path;
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("examples.rs");
     
@@ -16,6 +18,7 @@ fn main() {
             if let Ok(entry) = entry {
                 let path = entry.path();
                 if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+                    println!("cargo:rerun-if-changed={}", path.display());
                     let file_name = path.file_name().unwrap().to_str().unwrap().to_string();
                     let name = path.file_stem().unwrap().to_str().unwrap().to_string();
                     entries.push((name, file_name));
@@ -35,8 +38,12 @@ fn main() {
     }
     content.push_str("];\n");
 
-    fs::write(&dest_path, content).unwrap();
+    let should_write = match fs::read_to_string(&dest_path) {
+        Ok(existing_content) => existing_content != content,
+        Err(_) => true,
+    };
 
-    // Rerun if examples change
-    println!("cargo:rerun-if-changed=examples");
+    if should_write {
+        fs::write(&dest_path, content).unwrap();
+    }
 }
