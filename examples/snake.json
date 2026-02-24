@@ -1,0 +1,2258 @@
+{
+  "nodes": [
+    {
+      "position": [
+        124.060486,
+        137.73074
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 10.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        124.060486,
+        137.73074
+      ],
+      "chain_angle": 6.2539635,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        241.30513,
+        70.58117
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 7.2,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        241.30513,
+        70.58117
+      ],
+      "chain_angle": 5.347923,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        163.2186,
+        129.90276
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 9.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        163.2186,
+        129.90276
+      ],
+      "chain_angle": 6.0279408,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        259.98325,
+        -5.862648
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 5.6,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        259.98325,
+        -5.862648
+      ],
+      "chain_angle": 4.7073812,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        229.43298,
+        86.67627
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 7.6,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        229.43298,
+        86.67627
+      ],
+      "chain_angle": 5.497081,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        199.29579,
+        112.821655
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 8.4,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        199.29579,
+        112.821655
+      ],
+      "chain_angle": 5.776374,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        260.0834,
+        14.137102
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 6.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        260.0834,
+        14.137102
+      ],
+      "chain_angle": 4.8724546,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        250.56024,
+        52.851448
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 6.8,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        250.56024,
+        52.851448
+      ],
+      "chain_angle": 5.19349,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        143.86656,
+        134.9524
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 10.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        143.86656,
+        134.9524
+      ],
+      "chain_angle": 6.143817,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        256.89575,
+        33.88144
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 6.4,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        256.89575,
+        33.88144
+      ],
+      "chain_angle": 5.034717,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        84.1268,
+        136.79594
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 11.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        84.1268,
+        136.79594
+      ],
+      "chain_angle": 0.1771841,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        249.85483,
+        -44.41133
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 5.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        249.85483,
+        -44.41133
+      ],
+      "chain_angle": 4.3708887,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        45.190544,
+        127.84294
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 12.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        45.190544,
+        127.84294
+      ],
+      "chain_angle": 0.36926174,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        104.06902,
+        138.3151
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 11.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        104.06902,
+        138.3151
+      ],
+      "chain_angle": 0.07603049,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        256.55286,
+        -25.566263
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 5.2,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        256.55286,
+        -25.566263
+      ],
+      "chain_angle": 4.540017,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        181.80986,
+        122.529495
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 9.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        181.80986,
+        122.529495
+      ],
+      "chain_angle": 5.905615,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -313.41367,
+        -8.097578
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.8,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -313.41367,
+        -8.097578
+      ],
+      "chain_angle": 4.7544537,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -285.8317,
+        85.71476
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 25.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -285.8317,
+        85.71476
+      ],
+      "chain_angle": 4.13046,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.2617994,
+      "angle_max": 0.2617994,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -304.9957,
+        50.650246
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 20.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -304.9957,
+        50.650246
+      ],
+      "chain_angle": 4.2570825,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        215.30084,
+        100.82839
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 8.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        215.30084,
+        100.82839
+      ],
+      "chain_angle": 5.6401052,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -314.2547,
+        11.884729
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 20.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -314.2547,
+        11.884729
+      ],
+      "chain_angle": 4.5628357,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -311.27478,
+        31.661484
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 20.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -311.27478,
+        31.661484
+      ],
+      "chain_angle": 4.393034,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -308.52045,
+        -27.48975
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.7,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -308.52045,
+        -27.48975
+      ],
+      "chain_angle": 4.9595594,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -296.20096,
+        68.61277
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 20.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -296.20096,
+        68.61277
+      ],
+      "chain_angle": 4.1673355,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -286.93542,
+        -60.867737
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.4,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -286.93542,
+        -60.867737
+      ],
+      "chain_angle": 5.3984585,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -299.60544,
+        -45.3929
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.6,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -299.60544,
+        -45.3929
+      ],
+      "chain_angle": 5.1744013,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -252.69992,
+        -80.991806
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.2,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -252.69992,
+        -80.991806
+      ],
+      "chain_angle": 5.8718348,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -271.03156,
+        -72.99485
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.2,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -271.03156,
+        -72.99485
+      ],
+      "chain_angle": 5.631716,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -213.02756,
+        -83.16989
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -213.02756,
+        -83.16989
+      ],
+      "chain_angle": 0.060955524,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -232.99042,
+        -84.388245
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 19.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -232.99042,
+        -84.388245
+      ],
+      "chain_angle": 6.1125364,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -175.81831,
+        -68.95779
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 18.8,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -175.81831,
+        -68.95779
+      ],
+      "chain_angle": 0.45679498,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -193.76773,
+        -77.77927
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 18.9,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -193.76773,
+        -77.77927
+      ],
+      "chain_angle": 0.2729063,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -144.4463,
+        -44.254646
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 18.4,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -144.4463,
+        -44.254646
+      ],
+      "chain_angle": 0.7259681,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -159.40344,
+        -57.53184
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 18.6,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -159.40344,
+        -57.53184
+      ],
+      "chain_angle": 0.60808563,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -117.78185,
+        -14.460452
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 17.9,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -117.78185,
+        -14.460452
+      ],
+      "chain_angle": 0.86942554,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -130.68716,
+        -29.73962
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 18.1,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -130.68716,
+        -29.73962
+      ],
+      "chain_angle": 0.8121259,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -93.08999,
+        17.008259
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 17.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -93.08999,
+        17.008259
+      ],
+      "chain_angle": 0.90994716,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -105.36574,
+        1.218833
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 17.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -105.36574,
+        1.218833
+      ],
+      "chain_angle": 0.901026,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -67.75341,
+        47.955563
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 16.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -67.75341,
+        47.955563
+      ],
+      "chain_angle": 0.8705628,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -80.641335,
+        32.661728
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 16.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -80.641335,
+        32.661728
+      ],
+      "chain_angle": 0.8989494,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -39.870125,
+        76.613235
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 15.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -39.870125,
+        76.613235
+      ],
+      "chain_angle": 0.7710242,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -54.214073,
+        62.67583
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 15.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -54.214073,
+        62.67583
+      ],
+      "chain_angle": 0.8271625,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -8.45858,
+        101.332756
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 14.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -8.45858,
+        101.332756
+      ],
+      "chain_angle": 0.6291411,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -24.629246,
+        89.56374
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 14.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        -24.629246,
+        89.56374
+      ],
+      "chain_angle": 0.7043326,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        26.538664,
+        120.6244
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 13.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        26.538664,
+        120.6244
+      ],
+      "chain_angle": 0.4602914,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        8.620203,
+        111.74021
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 13.5,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        8.620203,
+        111.74021
+      ],
+      "chain_angle": 0.54728746,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        64.439926,
+        133.27078
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 12.0,
+      "node_type": "Normal",
+      "is_head": false,
+      "prev_position": [
+        64.439926,
+        133.27078
+      ],
+      "chain_angle": 0.27483892,
+      "movement_mode": "None",
+      "movement_speed": 12.0,
+      "angle_min": -0.7853982,
+      "angle_max": 0.7853982,
+      "path_type": "Circle",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        0.0,
+        0.0
+      ],
+      "wander_direction": 0.0,
+      "target_position": [
+        0.0,
+        0.0
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "position": [
+        -274.83896,
+        102.42284
+      ],
+      "acceleration": [
+        0.0,
+        0.0
+      ],
+      "radius": 20.0,
+      "node_type": "Anchor",
+      "is_head": true,
+      "prev_position": [
+        -274.83896,
+        102.42284
+      ],
+      "chain_angle": -2.1436903,
+      "movement_mode": "FollowTarget",
+      "movement_speed": 12.0,
+      "angle_min": -0.08726646,
+      "angle_max": 0.08726646,
+      "path_type": "Wander",
+      "path_amplitude": [
+        100.0,
+        100.0
+      ],
+      "path_phase": 0.0,
+      "path_center": [
+        -648.6001,
+        -7.049919
+      ],
+      "wander_direction": 3.128685,
+      "target_position": [
+        -159.45047,
+        281.30334
+      ],
+      "collision_damping": 0.5,
+      "constant_acceleration": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "constraints": [
+    {
+      "node_a": 14,
+      "node_b": 11,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 3,
+      "node_b": 14,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 6,
+      "node_b": 3,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 9,
+      "node_b": 6,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 7,
+      "node_b": 9,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 19,
+      "node_b": 4,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 0,
+      "node_b": 8,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 8,
+      "node_b": 2,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 2,
+      "node_b": 15,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 15,
+      "node_b": 5,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 5,
+      "node_b": 19,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 4,
+      "node_b": 1,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 1,
+      "node_b": 7,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 47,
+      "node_b": 17,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 17,
+      "node_b": 23,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 23,
+      "node_b": 18,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 18,
+      "node_b": 21,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 21,
+      "node_b": 20,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 20,
+      "node_b": 16,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 16,
+      "node_b": 22,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 22,
+      "node_b": 25,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 25,
+      "node_b": 24,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 24,
+      "node_b": 27,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 27,
+      "node_b": 26,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 26,
+      "node_b": 29,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 29,
+      "node_b": 28,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 28,
+      "node_b": 31,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 31,
+      "node_b": 30,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 30,
+      "node_b": 33,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 33,
+      "node_b": 32,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 32,
+      "node_b": 35,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 35,
+      "node_b": 34,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 34,
+      "node_b": 37,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 37,
+      "node_b": 36,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 36,
+      "node_b": 39,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 39,
+      "node_b": 38,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 38,
+      "node_b": 41,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 41,
+      "node_b": 40,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 40,
+      "node_b": 43,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 43,
+      "node_b": 42,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 42,
+      "node_b": 45,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 45,
+      "node_b": 44,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 44,
+      "node_b": 12,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 12,
+      "node_b": 46,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 46,
+      "node_b": 10,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 10,
+      "node_b": 13,
+      "rest_length": 20.0
+    },
+    {
+      "node_a": 13,
+      "node_b": 0,
+      "rest_length": 20.0
+    }
+  ],
+  "limb_sets": []
+}
