@@ -15,7 +15,7 @@ pub struct Playground {
 
 impl Default for Playground {
     fn default() -> Self {
-        let height = 500.0;
+        let height = 1000.0;
         let aspect = 16.0 / 9.0;
         let width = height * aspect;
         Self {
