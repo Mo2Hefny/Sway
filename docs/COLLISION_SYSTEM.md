@@ -26,7 +26,9 @@ new_prev_position = position + velocity * damping
 
 This makes the bounce feel physical — fast nodes bounce harder, slow nodes gently tap the wall and stop.
 
----
+<p align="center">
+  <img src="assets/damping.gif" alt="damping">
+</p>
 
 ## 2. Node–Node Collision
 
@@ -59,7 +61,8 @@ $$P_B = P_B - \hat{\delta} \times 0.5 \times overlap$$
 
 Each node gets moved halfway. The $0.5$ split assumes equal mass, which is fine for our purposes. 
 
-> [!NOTE] Limb nodes are excluded from this entirely since they are managed by the FABRIK solver.
+> [!NOTE]
+> Limb nodes are excluded from this entirely since they are managed by the FABRIK solver.
 
 ## 3. The Spatial Hash Grid
 
@@ -92,7 +95,8 @@ We store the pairs in a `HashSet<(usize, usize)>` (always ordered as `min, max`)
 
 Nodes that belong to the same creature (the same *constraint group*) shouldn't collide with each other. That would make the spine fight itself, which is wrong (duh).  
 
-> [!NOTE] In 2D, a creature *can* technically sit on top of itself.
+> [!NOTE]
+> In 2D, a creature *can* technically sit on top of itself.
 
 The `ConstraintGraph` assigns every connected set of nodes a shared `group_id`. During collision resolution, if both nodes share the same group, we skip them:
 

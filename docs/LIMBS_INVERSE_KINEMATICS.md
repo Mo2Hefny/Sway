@@ -2,7 +2,8 @@
 
 Most creatures have limbs, thus it was essential to be added to the engine. Limbs are what make things look alive! They need their own dedicated solver because regular Verlet + distance constraints aren't enough. Enter **FABRIK**: *Forward And Backward Reaching Inverse Kinematics*.
 
-> [!NOTE] Limb nodes are completely excluded from Verlet integration and node–node collision. Their positions are owned entirely by the FABRIK solver every frame.
+> [!NOTE]
+> Limb nodes are completely excluded from Verlet integration and node–node collision. Their positions are owned entirely by the FABRIK solver every frame.
 
 ## 1. What Is Inverse Kinematics?
 
@@ -59,8 +60,6 @@ $$total\_length = \sum L_i$$
 If $dist(target, root) \geq total\_length$, there's no valid bent configuration. Instead of running the full FABRIK loop, we just stretch the chain straight toward the target:
 
 $$P_{i+1} = P_i + \hat{(target - root)} \times L_i$$
-
----
 
 ## 3. Bend Control
 
