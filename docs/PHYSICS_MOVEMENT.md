@@ -1,4 +1,4 @@
-# Physics & Movement 🚀
+# Physics & Movement :rocket:
 
 This is where the magic happens! Making things move, stick together, while respecting physics ofcourse! or at least I hope it does I am not a physics expert :disguised_face:.
 
@@ -27,6 +27,36 @@ $$x_{t+1} = x_t + (x_t - x_{t-1}) + a_t$$
 
 Congratulations! We now have Verlet integration!
 It implicitly calculates velocity. It creates this really nice, heavy feel where momentum is preserved naturally.
+
+### Air Damping
+
+One extra ingredient we quietly sneak in every step: **air damping**. Each frame, the implicit velocity gets multiplied by a constant slightly less than 1:
+
+$$x_{t+1} = x_t + (x_t - x_{t-1}) \times AIR\_DAMPING + a_t$$
+
+With `AIR_DAMPING = 0.98`, the creature loses ~2% of its speed every frame. This prevents nodes from building up infinite velocity over time and keeps the whole thing from exploding. It also gives the motion that slightly sluggish, underwater feel which looks really nice for organic creatures.
+
+### Constant Acceleration
+
+Each node has a `constant_acceleration` field that gets added on top of the regular `acceleration` every frame:
+
+$$a_{total} = a_{frame} + a_{constant}$$
+
+This is how you'd add gravity, buoyancy, or any other continuous force to a specific node without touching the physics step itself. The frame acceleration `a_{frame}` is reset to zero after each step; `constant_acceleration` persists until you change it.
+
+### Anchor Nodes are Special
+
+Not every node runs through Verlet. **Anchor** and **Limb** nodes skip integration entirely:
+
+```rust
+if node.node_type == NodeType::Normal {
+    node.verlet_step(dt);
+} else {
+    node.prev_position = node.position; // freeze velocity to zero
+}
+```
+
+They only move when something explicitly sets their `position`. Anchors are driven by the movement system; Limbs are driven by the FABRIK solver.
 
 ## 2. Constraints
 
@@ -97,6 +127,3 @@ And just like that, we have a spine that maintains its structural integrity whil
 
 ### The Solver Loop
 We run these calculations multiple times per frame (`CONSTRAINT_ITERATIONS`). The more iterations, the stiffer the constraints. It's a balance between performance and "jiggliness."
-
-## 3. Legs Physics
-TO BE ADDED (hope I finish the implementation to begin with lol)
