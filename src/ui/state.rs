@@ -17,7 +17,7 @@ pub struct DisplaySettings {
 impl Default for DisplaySettings {
     fn default() -> Self {
         Self {
-            show_skin: true,
+            show_skin: false,
             show_edge: true,
             show_nodes: true,
             show_debug: true,
