@@ -46,17 +46,17 @@ The math and architecture behind each system is documented in `/docs`:
 ### 1. Layers & Construction
 Evaluating different visual layers — from the underlying skeleton and FABRIK limbs to the spline-smoothed skin.
 
-https://github.com/Mo2Hefny/Sway/raw/master/docs/assets/showcase.mp4
+https://github.com/user-attachments/assets/4f76feef-f7d8-447f-b87b-fbf8a74ef2e9
 
 ### 2. The Swarm
 Handling dozens of independent procedural creatures using a spatial hash grid for $O(n)$ collision broadphase and lookahead steering for proactive avoidance.
 
-https://github.com/Mo2Hefny/Sway/raw/master/docs/assets/swarm.mp4
+https://github.com/user-attachments/assets/3153a376-9955-4fc7-83be-64fabedb53ee
 
 ### 3. Mixed Simulation
 Simulating different creature types (Lizards and Snakes) in the same arena, each with different constraint and limb configurations.
 
-https://github.com/Mo2Hefny/Sway/raw/master/docs/assets/mix.mp4
+https://github.com/user-attachments/assets/7fb47959-7add-4b17-ad68-c08925fc3a88
 
 ## Project Layout
 
