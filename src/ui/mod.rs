@@ -13,7 +13,7 @@ use bevy_egui::EguiPrimaryContextPass;
 use icons::{UiIcons, EguiIconTextures};
 use state::*;
 use systems::{
-    apply_editor_actions, editor_ui_system, toggle_playback_control, toggle_ui_visibility,
+    apply_editor_actions, editor_ui_system, toggle_playback_control, toggle_ui_visibility, handle_visibility_shortcuts,
 };
 
 /// Bevy plugin for editor UI (bevy_egui).
@@ -37,7 +37,7 @@ impl Plugin for UiPlugin {
 
         app.add_systems(
             Update,
-            (toggle_ui_visibility, toggle_playback_control, apply_editor_actions),
+            (toggle_ui_visibility, toggle_playback_control, handle_visibility_shortcuts, apply_editor_actions),
         );
         // Run UI in egui pass so ctx.available_rect() is valid (after Context::run()).
         app.add_systems(EguiPrimaryContextPass, editor_ui_system);

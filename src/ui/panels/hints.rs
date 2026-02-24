@@ -27,5 +27,6 @@ pub fn draw_instruction_hints(ctx: &egui::Context) {
             ui.add(label(HINT_FOLLOW_NODE));
             ui.add(label(HINT_TOGGLE_UI));
             ui.add(label(HINT_PLAY));
+            ui.add(label(HINT_VISIBILITY_TOGGLES));
         });
 }

@@ -86,3 +86,4 @@ pub const PLAYBACK_PAUSE: &str = "Pause";
 pub const HINT_FOLLOW_NODE: &str = "Follow Node: F";
 pub const HINT_TOGGLE_UI: &str = "Toggle UI: H";
 pub const HINT_PLAY: &str = "Play/Pause: Space";
+pub const HINT_VISIBILITY_TOGGLES: &str = "Visibility Toggles: Ctrl + 1-4";

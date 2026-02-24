@@ -115,6 +115,37 @@ pub fn toggle_playback_control(
     }
 }
 
+/// Shortcuts for visibility toggles: Ctrl + Numpad 1-4.
+pub fn handle_visibility_shortcuts(
+    mut contexts: EguiContexts,
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut display_settings: ResMut<DisplaySettings>,
+) {
+    if let Ok(ctx) = contexts.ctx_mut() {
+        if ctx.wants_keyboard_input() {
+            return;
+        }
+    }
+
+    let ctrl = keyboard.pressed(KeyCode::ControlLeft) || keyboard.pressed(KeyCode::ControlRight);
+    if !ctrl {
+        return;
+    }
+
+    if keyboard.just_pressed(KeyCode::Numpad1) || keyboard.just_pressed(KeyCode::Digit1) {
+        display_settings.show_skin = !display_settings.show_skin;
+    }
+    if keyboard.just_pressed(KeyCode::Numpad2) || keyboard.just_pressed(KeyCode::Digit2) {
+        display_settings.show_edge = !display_settings.show_edge;
+    }
+    if keyboard.just_pressed(KeyCode::Numpad3) || keyboard.just_pressed(KeyCode::Digit3) {
+        display_settings.show_nodes = !display_settings.show_nodes;
+    }
+    if keyboard.just_pressed(KeyCode::Numpad4) || keyboard.just_pressed(KeyCode::Digit4) {
+        display_settings.show_debug = !display_settings.show_debug;
+    }
+}
+
 /// Applies deferred import, constraint updates, and constraint deletes.
 pub fn apply_editor_actions(
     mut commands: Commands,
