@@ -1,20 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sway | Procedural Animation Engine</title>
 
     <style>
-        body { 
-            margin: 0; 
-            padding: 0; 
-            background-color: #222; 
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            width: 100dvw;
+            height: 100dvh;
             overflow: hidden;
+            background-color: #222;
         }
 
-        canvas { 
-            display: block; 
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #222;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         #loading {
@@ -41,9 +57,24 @@
                     observer.disconnect();
                 }
             });
-
             observer.observe(document.body, { childList: true, subtree: true });
         });
+
+        window.addEventListener("keydown", (e) => {
+            const tag = document.activeElement?.tagName ?? "";
+            const isTextInput =
+                tag === "INPUT" ||
+                tag === "TEXTAREA" ||
+                tag === "SELECT" ||
+                document.activeElement?.isContentEditable;
+
+            if (isTextInput) return;
+
+            if (/^F\d+$/.test(e.key)) {
+                e.preventDefault();
+            }
+        }, { capture: true });
     </script>
 </body>
+
 </html>
